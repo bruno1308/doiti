@@ -1,0 +1,22 @@
+{
+  "expo": {
+    "name": "Doiti",
+    "slug": "doiti",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "doiti",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.doiti.app"
+    },
+    "plugins": ["expo-router"],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

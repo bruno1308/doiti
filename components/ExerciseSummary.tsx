@@ -234,8 +234,8 @@ const styles = StyleSheet.create({
   // Perfect styles
   sprinklesContainer: {
     position: "absolute",
-    width: 300,
-    height: 300,
+    width: 500,
+    height: 500,
   },
   sprinklesImage: {
     width: "100%",

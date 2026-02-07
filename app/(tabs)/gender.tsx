@@ -10,6 +10,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { colors, spacing } from "../../constants/theme";
 import { getRandomNoun, getArticleForGender } from "../../lib/exercise-logic";
 import { recordAnswer, recordSession } from "../../lib/stats";
+import CelebrationOverlay from "../../components/CelebrationOverlay";
 import type { Noun } from "../../lib/types";
 
 type GenderChoice = "m" | "f" | "n";
@@ -31,9 +32,14 @@ export default function GenderScreen() {
   });
   const [total, setTotal] = useState(0);
   const [correct, setCorrect] = useState(0);
+  const [showCelebration, setShowCelebration] = useState(false);
 
-  // Fade animation for the feedback / next section
+  const totalRef = useRef(0);
+  const correctRef = useRef(0);
+
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const shakeAnim = useRef(new Animated.Value(0)).current;
+  const shakeAnimRef = useRef<Animated.CompositeAnimation | null>(null);
 
   useEffect(() => {
     if (answer.selected !== null) {
@@ -45,55 +51,73 @@ export default function GenderScreen() {
     }
   }, [answer.selected, fadeAnim]);
 
+  const triggerShake = useCallback(() => {
+    shakeAnim.setValue(0);
+    const anim = Animated.sequence([
+      Animated.timing(shakeAnim, { toValue: 10, duration: 50, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: -10, duration: 50, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: 8, duration: 50, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: -8, duration: 50, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: 0, duration: 50, useNativeDriver: true }),
+    ]);
+    shakeAnimRef.current = anim;
+    anim.start(() => {
+      shakeAnimRef.current = null;
+    });
+  }, [shakeAnim]);
+
   const handleChoice = useCallback(
     (choice: GenderChoice) => {
-      // Prevent double-tap
       if (answer.selected !== null) return;
 
       const isCorrect = choice === currentNoun.gender;
       setAnswer({ selected: choice, isCorrect });
-      setTotal((prev) => prev + 1);
+      setTotal((prev) => {
+        totalRef.current = prev + 1;
+        return prev + 1;
+      });
       if (isCorrect) {
-        setCorrect((prev) => prev + 1);
+        setCorrect((prev) => {
+          correctRef.current = prev + 1;
+          return prev + 1;
+        });
+        setShowCelebration(true);
+      } else {
+        triggerShake();
       }
 
-      // Record to persistent stats
       recordAnswer("gender", isCorrect);
     },
-    [answer.selected, currentNoun.gender]
+    [answer.selected, currentNoun.gender, triggerShake]
   );
 
-  // Record session when user leaves this tab
+  // Record session only when user actually leaves this tab
   useFocusEffect(
     useCallback(() => {
       return () => {
-        if (total > 0) {
+        if (totalRef.current > 0) {
           recordSession({
             mode: "gender",
             date: new Date().toISOString(),
-            total,
-            correct,
+            total: totalRef.current,
+            correct: correctRef.current,
           });
         }
       };
-    }, [total, correct])
+    }, [])
   );
 
   const handleNext = useCallback(() => {
+    // Stop any in-flight shake animation
+    shakeAnimRef.current?.stop();
+    shakeAnim.setValue(0);
+
     fadeAnim.setValue(0);
     setCurrentNoun(getNextNoun());
     setAnswer({ selected: null, isCorrect: null });
-  }, [fadeAnim]);
+    setShowCelebration(false);
+  }, [fadeAnim, shakeAnim]);
 
-  /**
-   * Determine the background color for each gender button.
-   *
-   * Before any selection: use the default gender color.
-   * After selection:
-   *   - The correct answer button always turns green (success).
-   *   - The incorrectly-selected button turns red (error).
-   *   - Remaining buttons stay at their default gender color.
-   */
   const getButtonColor = (gender: GenderChoice): string => {
     const defaultColors: Record<GenderChoice, string> = {
       m: colors.masculine,
@@ -105,18 +129,15 @@ export default function GenderScreen() {
       return defaultColors[gender];
     }
 
-    // Always highlight the correct answer green
     if (gender === currentNoun.gender) {
       return colors.success;
     }
 
-    // The wrong button the user tapped turns red
     if (gender === answer.selected) {
       return colors.error;
     }
 
-    // All other buttons dim out
-    return defaultColors[gender] + "44"; // 27% opacity hex
+    return defaultColors[gender] + "44";
   };
 
   const percentage = total > 0 ? Math.round((correct / total) * 100) : 0;
@@ -124,6 +145,11 @@ export default function GenderScreen() {
 
   return (
     <View style={styles.container}>
+      <CelebrationOverlay
+        visible={showCelebration}
+        onFinish={() => setShowCelebration(false)}
+      />
+
       {/* Score */}
       <View style={styles.scoreContainer}>
         <Text style={styles.scoreText}>
@@ -131,10 +157,15 @@ export default function GenderScreen() {
         </Text>
       </View>
 
-      {/* Noun display */}
-      <View style={styles.nounContainer}>
+      {/* Noun display with shake on wrong */}
+      <Animated.View
+        style={[
+          styles.nounContainer,
+          { transform: [{ translateX: shakeAnim }] },
+        ]}
+      >
         <Text style={styles.nounText}>{currentNoun.word}</Text>
-      </View>
+      </Animated.View>
 
       {/* Gender buttons */}
       <View style={styles.buttonRow}>

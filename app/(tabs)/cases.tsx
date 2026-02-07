@@ -12,6 +12,7 @@ import { getShuffledCaseSentences } from "../../lib/exercise-logic";
 import { recordAnswer, recordSession } from "../../lib/stats";
 import { CaseSentence, GrammaticalCase } from "../../lib/types";
 import { colors, spacing } from "../../constants/theme";
+import CelebrationOverlay from "../../components/CelebrationOverlay";
 
 const CASES: GrammaticalCase[] = ["nominativ", "akkusativ", "dativ", "genitiv"];
 
@@ -43,21 +44,25 @@ export default function CasesScreen() {
   const [checked, setChecked] = useState(false);
   const [totalAnswered, setTotalAnswered] = useState(0);
   const [totalCorrect, setTotalCorrect] = useState(0);
+  const [showCelebration, setShowCelebration] = useState(false);
 
-  // Record session when user leaves this tab
+  const totalRef = useRef(0);
+  const correctRef = useRef(0);
+
+  // Record session only when user actually leaves this tab
   useFocusEffect(
     useCallback(() => {
       return () => {
-        if (totalAnswered > 0) {
+        if (totalRef.current > 0) {
           recordSession({
             mode: "cases",
             date: new Date().toISOString(),
-            total: totalAnswered,
-            correct: totalCorrect,
+            total: totalRef.current,
+            correct: correctRef.current,
           });
         }
       };
-    }, [totalAnswered, totalCorrect])
+    }, [])
   );
 
   const fadeAnim = useRef(new Animated.Value(1)).current;
@@ -93,8 +98,19 @@ export default function CasesScreen() {
       await recordAnswer("cases", isCorrect);
     }
 
-    setTotalAnswered((prev) => prev + sentence.nounPhrases.length);
-    setTotalCorrect((prev) => prev + correctCount);
+    setTotalAnswered((prev) => {
+      totalRef.current = prev + sentence.nounPhrases.length;
+      return prev + sentence.nounPhrases.length;
+    });
+    setTotalCorrect((prev) => {
+      correctRef.current = prev + correctCount;
+      return prev + correctCount;
+    });
+
+    // Show celebration if all correct
+    if (correctCount === sentence.nounPhrases.length) {
+      setShowCelebration(true);
+    }
   }, [allSelected, checked, sentence, selections]);
 
   const handleNext = useCallback(() => {
@@ -106,6 +122,7 @@ export default function CasesScreen() {
       setCurrentIndex((prev) => prev + 1);
       setSelections({});
       setChecked(false);
+      setShowCelebration(false);
       fadeAnim.setValue(0);
       Animated.timing(fadeAnim, {
         toValue: 1,
@@ -188,6 +205,7 @@ export default function CasesScreen() {
 
   return (
     <View style={styles.container}>
+      <CelebrationOverlay visible={showCelebration} onFinish={() => setShowCelebration(false)} />
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}

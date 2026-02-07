@@ -2,21 +2,28 @@ import React, { useState, useCallback } from "react";
 import {
   View,
   Text,
+  Image,
+  ImageSourcePropType,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { useRouter } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
 import { getStats, getAccuracy } from "../../lib/stats";
 import { AllStats, ExerciseMode, ModeStats } from "../../lib/types";
 import { colors, spacing } from "../../constants/theme";
 
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const owlMascot = require("../../assets/images/owl-mascot.png") as ImageSourcePropType;
+const genderCard = require("../../assets/images/gender-card.png") as ImageSourcePropType;
+const adjectivesCard = require("../../assets/images/adjectives-card.png") as ImageSourcePropType;
+const casesCard = require("../../assets/images/cases-card.png") as ImageSourcePropType;
+
 interface ModeCardProps {
   title: string;
   subtitle: string;
-  icon: keyof typeof Ionicons.glyphMap;
+  image: ImageSourcePropType;
   accentColor: string;
   modeStats: ModeStats;
   onPress: () => void;
@@ -25,7 +32,7 @@ interface ModeCardProps {
 function ModeCard({
   title,
   subtitle,
-  icon,
+  image,
   accentColor,
   modeStats,
   onPress,
@@ -40,11 +47,7 @@ function ModeCard({
       activeOpacity={0.7}
     >
       <View style={styles.cardHeader}>
-        <View
-          style={[styles.iconContainer, { backgroundColor: accentColor + "20" }]}
-        >
-          <Ionicons name={icon} size={28} color={accentColor} />
-        </View>
+        <Image source={image} style={styles.cardImage} />
         <View style={styles.cardTitleContainer}>
           <Text style={styles.cardTitle}>{title}</Text>
           <Text style={styles.cardSubtitle}>{subtitle}</Text>
@@ -116,8 +119,9 @@ export default function HomeScreen() {
       style={styles.container}
       contentContainerStyle={styles.content}
     >
-      {/* Header */}
+      {/* Header with mascot */}
       <View style={styles.header}>
+        <Image source={owlMascot} style={styles.mascot} />
         <Text style={styles.title}>Doiti</Text>
         <Text style={styles.subtitle}>German Grammar Practice</Text>
       </View>
@@ -129,7 +133,7 @@ export default function HomeScreen() {
         <ModeCard
           title="Der/Die/Das"
           subtitle="Learn noun genders"
-          icon="help-circle"
+          image={genderCard}
           accentColor={colors.primary}
           modeStats={stats.gender}
           onPress={() => router.push("/gender")}
@@ -138,7 +142,7 @@ export default function HomeScreen() {
         <ModeCard
           title="Adjective Endings"
           subtitle="Master adjective declension"
-          icon="create"
+          image={adjectivesCard}
           accentColor={colors.warning}
           modeStats={stats.adjectives}
           onPress={() => router.push("/adjectives")}
@@ -147,7 +151,7 @@ export default function HomeScreen() {
         <ModeCard
           title="Case Identification"
           subtitle="Identify grammatical cases"
-          icon="book"
+          image={casesCard}
           accentColor={colors.success}
           modeStats={stats.cases}
           onPress={() => router.push("/cases")}
@@ -206,7 +210,14 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: "center",
-    paddingVertical: spacing.xl,
+    paddingVertical: spacing.lg,
+  },
+  mascot: {
+    width: 100,
+    height: 100,
+    resizeMode: "contain",
+    marginBottom: spacing.sm,
+    borderRadius: 50,
   },
   title: {
     fontSize: 36,
@@ -240,12 +251,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: spacing.md,
   },
-  iconContainer: {
-    width: 48,
-    height: 48,
+  cardImage: {
+    width: 56,
+    height: 56,
     borderRadius: 12,
-    justifyContent: "center",
-    alignItems: "center",
+    resizeMode: "cover",
   },
   cardTitleContainer: {
     marginLeft: spacing.md,

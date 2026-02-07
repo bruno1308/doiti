@@ -15,6 +15,7 @@ import { generateAdjectiveExercise } from "../../lib/exercise-logic";
 import { recordAnswer, recordSession } from "../../lib/stats";
 import { AdjectiveTemplate } from "../../lib/types";
 import { colors, spacing } from "../../constants/theme";
+import CelebrationOverlay from "../../components/CelebrationOverlay";
 
 import type { ArticleType, GrammaticalCase } from "../../lib/types";
 
@@ -40,25 +41,46 @@ export default function AdjectivesScreen() {
   const [isCorrect, setIsCorrect] = useState(false);
   const [correct, setCorrect] = useState(0);
   const [total, setTotal] = useState(0);
+  const [showCelebration, setShowCelebration] = useState(false);
 
-  // Record session when user leaves this tab
+  const totalRef = useRef(0);
+  const correctRef = useRef(0);
+
+  // Record session only when user actually leaves this tab
   useFocusEffect(
     useCallback(() => {
       return () => {
-        if (total > 0) {
+        if (totalRef.current > 0) {
           recordSession({
             mode: "adjectives",
             date: new Date().toISOString(),
-            total,
-            correct,
+            total: totalRef.current,
+            correct: correctRef.current,
           });
         }
       };
-    }, [total, correct])
+    }, [])
   );
 
   const fadeAnim = useRef(new Animated.Value(1)).current;
+  const shakeAnim = useRef(new Animated.Value(0)).current;
+  const shakeAnimRef = useRef<Animated.CompositeAnimation | null>(null);
   const inputRef = useRef<TextInput>(null);
+
+  const triggerShake = useCallback(() => {
+    shakeAnim.setValue(0);
+    const anim = Animated.sequence([
+      Animated.timing(shakeAnim, { toValue: 10, duration: 50, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: -10, duration: 50, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: 8, duration: 50, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: -8, duration: 50, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: 0, duration: 50, useNativeDriver: true }),
+    ]);
+    shakeAnimRef.current = anim;
+    anim.start(() => {
+      shakeAnimRef.current = null;
+    });
+  }, [shakeAnim]);
 
   const percentage = total > 0 ? Math.round((correct / total) * 100) : 0;
 
@@ -69,14 +91,27 @@ export default function AdjectivesScreen() {
 
     setIsCorrect(result);
     setSubmitted(true);
-    setTotal((prev) => prev + 1);
+    setTotal((prev) => {
+      totalRef.current = prev + 1;
+      return prev + 1;
+    });
     if (result) {
-      setCorrect((prev) => prev + 1);
+      setCorrect((prev) => {
+        correctRef.current = prev + 1;
+        return prev + 1;
+      });
+      setShowCelebration(true);
+    } else {
+      triggerShake();
     }
     recordAnswer("adjectives", result);
-  }, [input, exercise.correctEnding]);
+  }, [input, exercise.correctEnding, triggerShake]);
 
   const handleNext = useCallback(() => {
+    // Stop any in-flight shake animation
+    shakeAnimRef.current?.stop();
+    shakeAnim.setValue(0);
+
     Animated.timing(fadeAnim, {
       toValue: 0,
       duration: 150,
@@ -86,6 +121,7 @@ export default function AdjectivesScreen() {
       setInput("");
       setSubmitted(false);
       setIsCorrect(false);
+      setShowCelebration(false);
 
       Animated.timing(fadeAnim, {
         toValue: 1,
@@ -95,7 +131,7 @@ export default function AdjectivesScreen() {
         inputRef.current?.focus();
       });
     });
-  }, [fadeAnim]);
+  }, [fadeAnim, shakeAnim]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -120,6 +156,7 @@ export default function AdjectivesScreen() {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
     >
+      <CelebrationOverlay visible={showCelebration} onFinish={() => setShowCelebration(false)} />
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
@@ -174,7 +211,9 @@ export default function AdjectivesScreen() {
           </View>
 
           {/* Input area */}
-          <View style={styles.inputArea}>
+          <Animated.View
+            style={[styles.inputArea, { transform: [{ translateX: shakeAnim }] }]}
+          >
             <Text style={styles.adjectiveBase}>{exercise.adjective}</Text>
             <TextInput
               ref={inputRef}
@@ -188,7 +227,7 @@ export default function AdjectivesScreen() {
               editable={!submitted}
               onSubmitEditing={!submitted && input.trim() ? handleCheck : undefined}
             />
-          </View>
+          </Animated.View>
 
           {/* Feedback */}
           {submitted && (

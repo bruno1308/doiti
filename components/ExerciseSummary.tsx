@@ -185,6 +185,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     padding: spacing.lg,
+    paddingBottom: 80,
   },
   image: {
     width: 120,

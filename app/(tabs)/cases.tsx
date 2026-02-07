@@ -1,18 +1,26 @@
 import React, { useCallback, useMemo, useRef, useState } from "react";
 import {
   Animated,
+  ImageSourcePropType,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
+  Platform,
   View,
 } from "react-native";
+
+const useNativeDriver = Platform.OS !== "web";
 import { useFocusEffect } from "@react-navigation/native";
 import { getShuffledCaseSentences } from "../../lib/exercise-logic";
 import { recordAnswer, recordSession } from "../../lib/stats";
-import { CaseSentence, GrammaticalCase } from "../../lib/types";
+import { CaseSentence, ExercisePhase, GrammaticalCase } from "../../lib/types";
 import { colors, spacing } from "../../constants/theme";
 import CelebrationOverlay from "../../components/CelebrationOverlay";
+import ExerciseSetup from "../../components/ExerciseSetup";
+import ExerciseSummary from "../../components/ExerciseSummary";
+
+const casesCard = require("../../assets/images/cases-card.webp") as ImageSourcePropType;
 
 const CASES: GrammaticalCase[] = ["nominativ", "akkusativ", "dativ", "genitiv"];
 
@@ -38,20 +46,24 @@ const CASE_COLORS: Record<GrammaticalCase, string> = {
 };
 
 export default function CasesScreen() {
-  const [sentences] = useState<CaseSentence[]>(() => getShuffledCaseSentences());
+  const [phase, setPhase] = useState<ExercisePhase>("setup");
+  const [targetCount, setTargetCount] = useState(10);
+  const [sentences, setSentences] = useState<CaseSentence[]>(() => getShuffledCaseSentences());
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selections, setSelections] = useState<Record<number, GrammaticalCase>>({});
   const [checked, setChecked] = useState(false);
   const [totalAnswered, setTotalAnswered] = useState(0);
   const [totalCorrect, setTotalCorrect] = useState(0);
+  const [questionsCompleted, setQuestionsCompleted] = useState(0);
   const [showCelebration, setShowCelebration] = useState(false);
 
   const totalRef = useRef(0);
   const correctRef = useRef(0);
 
-  // Record session only when user actually leaves this tab
+  // Record partial session on blur, reset to setup on focus
   useFocusEffect(
     useCallback(() => {
+      setPhase("setup");
       return () => {
         if (totalRef.current > 0) {
           recordSession({
@@ -60,6 +72,8 @@ export default function CasesScreen() {
             total: totalRef.current,
             correct: correctRef.current,
           });
+          totalRef.current = 0;
+          correctRef.current = 0;
         }
       };
     }, [])
@@ -78,6 +92,21 @@ export default function CasesScreen() {
   );
 
   const accuracy = totalAnswered === 0 ? 0 : Math.round((totalCorrect / totalAnswered) * 100);
+
+  const handleStart = useCallback((count: number) => {
+    setTargetCount(count);
+    setTotalAnswered(0);
+    setTotalCorrect(0);
+    setQuestionsCompleted(0);
+    totalRef.current = 0;
+    correctRef.current = 0;
+    setSentences(getShuffledCaseSentences());
+    setCurrentIndex(0);
+    setSelections({});
+    setChecked(false);
+    setShowCelebration(false);
+    setPhase("playing");
+  }, []);
 
   const handleSelect = useCallback(
     (phraseIndex: number, caseValue: GrammaticalCase) => {
@@ -114,10 +143,27 @@ export default function CasesScreen() {
   }, [allSelected, checked, sentence, selections]);
 
   const handleNext = useCallback(() => {
+    const newQuestionsCompleted = questionsCompleted + 1;
+    setQuestionsCompleted(newQuestionsCompleted);
+
+    // Check if we've reached the target (sentence-level counting)
+    if (newQuestionsCompleted >= targetCount) {
+      recordSession({
+        mode: "cases",
+        date: new Date().toISOString(),
+        total: totalRef.current,
+        correct: correctRef.current,
+      });
+      totalRef.current = 0;
+      correctRef.current = 0;
+      setPhase("summary");
+      return;
+    }
+
     Animated.timing(fadeAnim, {
       toValue: 0,
       duration: 150,
-      useNativeDriver: true,
+      useNativeDriver,
     }).start(() => {
       setCurrentIndex((prev) => prev + 1);
       setSelections({});
@@ -127,10 +173,33 @@ export default function CasesScreen() {
       Animated.timing(fadeAnim, {
         toValue: 1,
         duration: 200,
-        useNativeDriver: true,
+        useNativeDriver,
       }).start();
     });
-  }, [fadeAnim]);
+  }, [fadeAnim, questionsCompleted, targetCount]);
+
+  if (phase === "setup") {
+    return (
+      <ExerciseSetup
+        title="Case Identification"
+        subtitle="Identify grammatical cases"
+        image={casesCard}
+        accentColor={colors.success}
+        onStart={handleStart}
+      />
+    );
+  }
+
+  if (phase === "summary") {
+    return (
+      <ExerciseSummary
+        correct={totalCorrect}
+        total={totalAnswered}
+        accentColor={colors.success}
+        onDone={() => setPhase("setup")}
+      />
+    );
+  }
 
   if (!sentence) {
     return (
@@ -148,7 +217,7 @@ export default function CasesScreen() {
     return (
       <View key={phraseIndex} style={styles.phraseBlock}>
         <View style={styles.phraseHeader}>
-          <Text style={styles.phraseText}>"{phrase.text}"</Text>
+          <Text style={styles.phraseText}>&ldquo;{phrase.text}&rdquo;</Text>
           {checked && !isCorrect && (
             <Text style={[styles.correctionLabel, { color: CASE_COLORS[phrase.case] }]}>
               = {CASE_FULL_LABELS[phrase.case]}
@@ -210,10 +279,15 @@ export default function CasesScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Score header */}
-        <Text style={styles.scoreText}>
-          {totalCorrect}/{totalAnswered} ({accuracy}%)
-        </Text>
+        {/* Score + Progress header */}
+        <View style={styles.scoreHeader}>
+          <Text style={styles.progressText}>
+            {questionsCompleted}/{targetCount}
+          </Text>
+          <Text style={styles.scoreText}>
+            {totalCorrect}/{totalAnswered} ({accuracy}%)
+          </Text>
+        </View>
 
         <Animated.View style={{ opacity: fadeAnim }}>
           {/* Sentence card */}
@@ -277,12 +351,20 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     paddingBottom: 48,
   },
+  scoreHeader: {
+    alignItems: "center",
+    marginBottom: spacing.lg,
+  },
+  progressText: {
+    color: colors.success,
+    fontSize: 14,
+    fontWeight: "600",
+    marginBottom: 2,
+  },
   scoreText: {
     color: colors.textSecondary,
     fontSize: 16,
     fontWeight: "600",
-    textAlign: "center",
-    marginBottom: spacing.lg,
   },
   sentenceCard: {
     backgroundColor: colors.surface,

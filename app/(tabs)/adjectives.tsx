@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useRef, useCallback } from "react";
 import {
   View,
   Text,
@@ -9,15 +9,22 @@ import {
   Platform,
   Animated,
   ScrollView,
+  ImageSourcePropType,
 } from "react-native";
+
+const useNativeDriver = Platform.OS !== "web";
 import { useFocusEffect } from "@react-navigation/native";
 import { generateAdjectiveExercise } from "../../lib/exercise-logic";
 import { recordAnswer, recordSession } from "../../lib/stats";
-import { AdjectiveTemplate } from "../../lib/types";
+import { AdjectiveTemplate, ExercisePhase } from "../../lib/types";
 import { colors, spacing } from "../../constants/theme";
 import CelebrationOverlay from "../../components/CelebrationOverlay";
+import ExerciseSetup from "../../components/ExerciseSetup";
+import ExerciseSummary from "../../components/ExerciseSummary";
 
 import type { ArticleType, GrammaticalCase } from "../../lib/types";
+
+const adjectivesCard = require("../../assets/images/adjectives-card.webp") as ImageSourcePropType;
 
 const ARTICLE_TYPE_LABELS: Record<ArticleType, string> = {
   definite: "Definite article",
@@ -33,6 +40,8 @@ const CASE_LABELS: Record<GrammaticalCase, string> = {
 };
 
 export default function AdjectivesScreen() {
+  const [phase, setPhase] = useState<ExercisePhase>("setup");
+  const [targetCount, setTargetCount] = useState(10);
   const [exercise, setExercise] = useState<AdjectiveTemplate>(
     () => generateAdjectiveExercise()
   );
@@ -46,9 +55,10 @@ export default function AdjectivesScreen() {
   const totalRef = useRef(0);
   const correctRef = useRef(0);
 
-  // Record session only when user actually leaves this tab
+  // Record partial session on blur, reset to setup on focus
   useFocusEffect(
     useCallback(() => {
+      setPhase("setup");
       return () => {
         if (totalRef.current > 0) {
           recordSession({
@@ -57,6 +67,8 @@ export default function AdjectivesScreen() {
             total: totalRef.current,
             correct: correctRef.current,
           });
+          totalRef.current = 0;
+          correctRef.current = 0;
         }
       };
     }, [])
@@ -70,17 +82,32 @@ export default function AdjectivesScreen() {
   const triggerShake = useCallback(() => {
     shakeAnim.setValue(0);
     const anim = Animated.sequence([
-      Animated.timing(shakeAnim, { toValue: 10, duration: 50, useNativeDriver: true }),
-      Animated.timing(shakeAnim, { toValue: -10, duration: 50, useNativeDriver: true }),
-      Animated.timing(shakeAnim, { toValue: 8, duration: 50, useNativeDriver: true }),
-      Animated.timing(shakeAnim, { toValue: -8, duration: 50, useNativeDriver: true }),
-      Animated.timing(shakeAnim, { toValue: 0, duration: 50, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: 10, duration: 50, useNativeDriver }),
+      Animated.timing(shakeAnim, { toValue: -10, duration: 50, useNativeDriver }),
+      Animated.timing(shakeAnim, { toValue: 8, duration: 50, useNativeDriver }),
+      Animated.timing(shakeAnim, { toValue: -8, duration: 50, useNativeDriver }),
+      Animated.timing(shakeAnim, { toValue: 0, duration: 50, useNativeDriver }),
     ]);
     shakeAnimRef.current = anim;
     anim.start(() => {
       shakeAnimRef.current = null;
     });
   }, [shakeAnim]);
+
+  const handleStart = useCallback((count: number) => {
+    setTargetCount(count);
+    setTotal(0);
+    setCorrect(0);
+    totalRef.current = 0;
+    correctRef.current = 0;
+    setExercise(generateAdjectiveExercise());
+    setInput("");
+    setSubmitted(false);
+    setIsCorrect(false);
+    setShowCelebration(false);
+    setPhase("playing");
+    setTimeout(() => inputRef.current?.focus(), 300);
+  }, []);
 
   const percentage = total > 0 ? Math.round((correct / total) * 100) : 0;
 
@@ -108,6 +135,20 @@ export default function AdjectivesScreen() {
   }, [input, exercise.correctEnding, triggerShake]);
 
   const handleNext = useCallback(() => {
+    // Check if we've reached the target
+    if (totalRef.current >= targetCount) {
+      recordSession({
+        mode: "adjectives",
+        date: new Date().toISOString(),
+        total: totalRef.current,
+        correct: correctRef.current,
+      });
+      totalRef.current = 0;
+      correctRef.current = 0;
+      setPhase("summary");
+      return;
+    }
+
     // Stop any in-flight shake animation
     shakeAnimRef.current?.stop();
     shakeAnim.setValue(0);
@@ -115,7 +156,7 @@ export default function AdjectivesScreen() {
     Animated.timing(fadeAnim, {
       toValue: 0,
       duration: 150,
-      useNativeDriver: true,
+      useNativeDriver,
     }).start(() => {
       setExercise(generateAdjectiveExercise());
       setInput("");
@@ -126,19 +167,35 @@ export default function AdjectivesScreen() {
       Animated.timing(fadeAnim, {
         toValue: 1,
         duration: 200,
-        useNativeDriver: true,
+        useNativeDriver,
       }).start(() => {
         inputRef.current?.focus();
       });
     });
-  }, [fadeAnim, shakeAnim]);
+  }, [fadeAnim, shakeAnim, targetCount]);
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      inputRef.current?.focus();
-    }, 300);
-    return () => clearTimeout(timer);
-  }, []);
+  if (phase === "setup") {
+    return (
+      <ExerciseSetup
+        title="Adjective Endings"
+        subtitle="Master adjective declension"
+        image={adjectivesCard}
+        accentColor={colors.warning}
+        onStart={handleStart}
+      />
+    );
+  }
+
+  if (phase === "summary") {
+    return (
+      <ExerciseSummary
+        correct={correct}
+        total={total}
+        accentColor={colors.warning}
+        onDone={() => setPhase("setup")}
+      />
+    );
+  }
 
   const inputBorderColor = submitted
     ? isCorrect
@@ -162,8 +219,11 @@ export default function AdjectivesScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
-          {/* Score */}
+          {/* Score + Progress */}
           <View style={styles.scoreRow}>
+            <Text style={styles.progressText}>
+              {total}/{targetCount}
+            </Text>
             <Text style={styles.scoreText}>
               {correct}/{total}
               {total > 0 ? ` (${percentage}%)` : ""}
@@ -294,6 +354,13 @@ const styles = StyleSheet.create({
   scoreRow: {
     alignSelf: "flex-end",
     marginBottom: spacing.md,
+    alignItems: "flex-end",
+  },
+  progressText: {
+    color: colors.warning,
+    fontSize: 14,
+    fontWeight: "600",
+    marginBottom: 2,
   },
   scoreText: {
     color: colors.textSecondary,

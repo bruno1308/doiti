@@ -1,5 +1,7 @@
 import React, { useEffect, useRef } from "react";
-import { Animated, Image, StyleSheet, View } from "react-native";
+import { Animated, Image, Platform, StyleSheet, View } from "react-native";
+
+const useNativeDriver = Platform.OS !== "web";
 
 const celebrationImage = require("../assets/images/celebration.webp");
 
@@ -28,12 +30,12 @@ export default function CelebrationOverlay({
         toValue: 1,
         friction: 4,
         tension: 60,
-        useNativeDriver: true,
+        useNativeDriver,
       }),
       Animated.timing(opacity, {
         toValue: 1,
         duration: 200,
-        useNativeDriver: true,
+        useNativeDriver,
       }),
     ]);
 
@@ -44,7 +46,7 @@ export default function CelebrationOverlay({
         toValue: 0,
         duration: 600,
         delay: 500,
-        useNativeDriver: true,
+        useNativeDriver,
       });
       exitAnim.start(() => {
         onFinishRef.current?.();

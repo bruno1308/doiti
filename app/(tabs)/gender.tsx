@@ -5,13 +5,21 @@ import {
   StyleSheet,
   TouchableOpacity,
   Animated,
+  ImageSourcePropType,
+  Platform,
 } from "react-native";
+
+const useNativeDriver = Platform.OS !== "web";
 import { useFocusEffect } from "@react-navigation/native";
 import { colors, spacing } from "../../constants/theme";
 import { getRandomNoun, getArticleForGender } from "../../lib/exercise-logic";
 import { recordAnswer, recordSession } from "../../lib/stats";
 import CelebrationOverlay from "../../components/CelebrationOverlay";
-import type { Noun } from "../../lib/types";
+import ExerciseSetup from "../../components/ExerciseSetup";
+import ExerciseSummary from "../../components/ExerciseSummary";
+import type { Noun, ExercisePhase } from "../../lib/types";
+
+const genderCard = require("../../assets/images/gender-card.webp") as ImageSourcePropType;
 
 type GenderChoice = "m" | "f" | "n";
 
@@ -25,6 +33,8 @@ function getNextNoun(): Noun {
 }
 
 export default function GenderScreen() {
+  const [phase, setPhase] = useState<ExercisePhase>("setup");
+  const [targetCount, setTargetCount] = useState(10);
   const [currentNoun, setCurrentNoun] = useState<Noun>(getNextNoun);
   const [answer, setAnswer] = useState<AnswerState>({
     selected: null,
@@ -46,7 +56,7 @@ export default function GenderScreen() {
       Animated.timing(fadeAnim, {
         toValue: 1,
         duration: 300,
-        useNativeDriver: true,
+        useNativeDriver,
       }).start();
     }
   }, [answer.selected, fadeAnim]);
@@ -54,17 +64,29 @@ export default function GenderScreen() {
   const triggerShake = useCallback(() => {
     shakeAnim.setValue(0);
     const anim = Animated.sequence([
-      Animated.timing(shakeAnim, { toValue: 10, duration: 50, useNativeDriver: true }),
-      Animated.timing(shakeAnim, { toValue: -10, duration: 50, useNativeDriver: true }),
-      Animated.timing(shakeAnim, { toValue: 8, duration: 50, useNativeDriver: true }),
-      Animated.timing(shakeAnim, { toValue: -8, duration: 50, useNativeDriver: true }),
-      Animated.timing(shakeAnim, { toValue: 0, duration: 50, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: 10, duration: 50, useNativeDriver }),
+      Animated.timing(shakeAnim, { toValue: -10, duration: 50, useNativeDriver }),
+      Animated.timing(shakeAnim, { toValue: 8, duration: 50, useNativeDriver }),
+      Animated.timing(shakeAnim, { toValue: -8, duration: 50, useNativeDriver }),
+      Animated.timing(shakeAnim, { toValue: 0, duration: 50, useNativeDriver }),
     ]);
     shakeAnimRef.current = anim;
     anim.start(() => {
       shakeAnimRef.current = null;
     });
   }, [shakeAnim]);
+
+  const handleStart = useCallback((count: number) => {
+    setTargetCount(count);
+    setTotal(0);
+    setCorrect(0);
+    totalRef.current = 0;
+    correctRef.current = 0;
+    setCurrentNoun(getNextNoun());
+    setAnswer({ selected: null, isCorrect: null });
+    setShowCelebration(false);
+    setPhase("playing");
+  }, []);
 
   const handleChoice = useCallback(
     (choice: GenderChoice) => {
@@ -91,9 +113,10 @@ export default function GenderScreen() {
     [answer.selected, currentNoun.gender, triggerShake]
   );
 
-  // Record session only when user actually leaves this tab
+  // Record partial session on blur, reset to setup on focus
   useFocusEffect(
     useCallback(() => {
+      setPhase("setup");
       return () => {
         if (totalRef.current > 0) {
           recordSession({
@@ -102,12 +125,29 @@ export default function GenderScreen() {
             total: totalRef.current,
             correct: correctRef.current,
           });
+          totalRef.current = 0;
+          correctRef.current = 0;
         }
       };
     }, [])
   );
 
   const handleNext = useCallback(() => {
+    // Check if we've reached the target
+    if (totalRef.current >= targetCount) {
+      recordSession({
+        mode: "gender",
+        date: new Date().toISOString(),
+        total: totalRef.current,
+        correct: correctRef.current,
+      });
+      // Keep correct/total state for summary, reset refs to prevent double-recording
+      totalRef.current = 0;
+      correctRef.current = 0;
+      setPhase("summary");
+      return;
+    }
+
     // Stop any in-flight shake animation
     shakeAnimRef.current?.stop();
     shakeAnim.setValue(0);
@@ -116,7 +156,7 @@ export default function GenderScreen() {
     setCurrentNoun(getNextNoun());
     setAnswer({ selected: null, isCorrect: null });
     setShowCelebration(false);
-  }, [fadeAnim, shakeAnim]);
+  }, [fadeAnim, shakeAnim, targetCount]);
 
   const getButtonColor = (gender: GenderChoice): string => {
     const defaultColors: Record<GenderChoice, string> = {
@@ -140,6 +180,29 @@ export default function GenderScreen() {
     return defaultColors[gender] + "44";
   };
 
+  if (phase === "setup") {
+    return (
+      <ExerciseSetup
+        title="Der/Die/Das"
+        subtitle="Learn noun genders"
+        image={genderCard}
+        accentColor={colors.primary}
+        onStart={handleStart}
+      />
+    );
+  }
+
+  if (phase === "summary") {
+    return (
+      <ExerciseSummary
+        correct={correct}
+        total={total}
+        accentColor={colors.primary}
+        onDone={() => setPhase("setup")}
+      />
+    );
+  }
+
   const percentage = total > 0 ? Math.round((correct / total) * 100) : 0;
   const correctArticle = getArticleForGender(currentNoun.gender);
 
@@ -150,8 +213,11 @@ export default function GenderScreen() {
         onFinish={() => setShowCelebration(false)}
       />
 
-      {/* Score */}
+      {/* Score + Progress */}
       <View style={styles.scoreContainer}>
+        <Text style={styles.progressText}>
+          {total}/{targetCount}
+        </Text>
         <Text style={styles.scoreText}>
           {correct}/{total} ({percentage}%)
         </Text>
@@ -225,6 +291,13 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: spacing.xl,
     right: spacing.md,
+    alignItems: "flex-end",
+  },
+  progressText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: colors.primary,
+    marginBottom: 2,
   },
   scoreText: {
     fontSize: 18,

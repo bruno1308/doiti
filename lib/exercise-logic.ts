@@ -12,6 +12,8 @@ import type {
   PossessiveExercise,
   ArticleExercise,
   Gender,
+  Person,
+  ArticleType,
 } from "./types";
 import type { AdjectiveExerciseData } from "../data/adjective-exercises";
 import type { PossessiveExerciseData } from "../data/possessives-exercises";
@@ -152,4 +154,50 @@ export function generateArticleExercise(): ArticleExercise {
     sentenceAfter: data.sentenceAfter,
     translation: data.translation,
   };
+}
+
+// --- Multiple Choice Option Generators ---
+
+const ALL_ADJECTIVE_ENDINGS = ["-e", "-en", "-em", "-er", "-es"];
+
+export function getAdjectiveEndingOptions(): string[] {
+  return shuffle(ALL_ADJECTIVE_ENDINGS);
+}
+
+const POSSESSIVE_STEMS: Record<Person, string> = {
+  ich: "mein",
+  du: "dein",
+  er: "sein",
+  sie_sg: "ihr",
+  es: "sein",
+  wir: "unser",
+  ihr: "euer",
+  sie_pl: "ihr",
+  Sie: "Ihr",
+};
+
+const POSSESSIVE_ENDINGS = ["", "e", "en", "em", "er", "es"];
+
+function buildPossessiveForms(person: Person): string[] {
+  const stem = POSSESSIVE_STEMS[person];
+  if (person === "ihr" && stem === "euer") {
+    // Special: euer → eure, euren, eurem, eurer, eures (drop inner e)
+    return ["euer", "eure", "euren", "eurem", "eurer", "eures"];
+  }
+  return POSSESSIVE_ENDINGS.map(e => stem + e);
+}
+
+export function getPossessiveOptions(person: Person, correctForm: string): string[] {
+  const allForms = buildPossessiveForms(person);
+  const wrong = shuffle(allForms.filter(f => f !== correctForm)).slice(0, 3);
+  return shuffle([correctForm, ...wrong]);
+}
+
+const DEFINITE_FORMS = ["der", "die", "das", "den", "dem", "des"];
+const INDEFINITE_FORMS = ["ein", "eine", "einen", "einem", "einer", "eines"];
+
+export function getArticleOptions(articleType: ArticleType, correctForm: string): string[] {
+  const pool = articleType === "definite" ? DEFINITE_FORMS : INDEFINITE_FORMS;
+  const wrong = shuffle(pool.filter(f => f !== correctForm)).slice(0, 3);
+  return shuffle([correctForm, ...wrong]);
 }

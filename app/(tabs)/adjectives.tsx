@@ -2,10 +2,8 @@ import React, { useState, useRef, useCallback } from "react";
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   StyleSheet,
-  KeyboardAvoidingView,
   Platform,
   Animated,
   ScrollView,
@@ -15,7 +13,7 @@ import {
 const useNativeDriver = Platform.OS !== "web";
 import { useFocusEffect } from "@react-navigation/native";
 import { useRouter } from "expo-router";
-import { generateAdjectiveExercise } from "../../lib/exercise-logic";
+import { generateAdjectiveExercise, getAdjectiveEndingOptions } from "../../lib/exercise-logic";
 import { recordAnswer, recordSession } from "../../lib/stats";
 import { AdjectiveTemplate, ExercisePhase } from "../../lib/types";
 import { colors, spacing } from "../../constants/theme";
@@ -47,9 +45,9 @@ export default function AdjectivesScreen() {
   const [exercise, setExercise] = useState<AdjectiveTemplate>(
     () => generateAdjectiveExercise()
   );
-  const [input, setInput] = useState("");
-  const [submitted, setSubmitted] = useState(false);
-  const [isCorrect, setIsCorrect] = useState(false);
+  const [options, setOptions] = useState<string[]>(() => getAdjectiveEndingOptions());
+  const [selected, setSelected] = useState<string | null>(null);
+  const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
   const [correct, setCorrect] = useState(0);
   const [total, setTotal] = useState(0);
   const [showCelebration, setShowCelebration] = useState(false);
@@ -57,7 +55,6 @@ export default function AdjectivesScreen() {
   const totalRef = useRef(0);
   const correctRef = useRef(0);
 
-  // Record partial session on blur, reset to setup on focus
   useFocusEffect(
     useCallback(() => {
       setPhase("setup");
@@ -79,7 +76,6 @@ export default function AdjectivesScreen() {
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const shakeAnim = useRef(new Animated.Value(0)).current;
   const shakeAnimRef = useRef<Animated.CompositeAnimation | null>(null);
-  const inputRef = useRef<TextInput>(null);
 
   const triggerShake = useCallback(() => {
     shakeAnim.setValue(0);
@@ -102,24 +98,25 @@ export default function AdjectivesScreen() {
     setCorrect(0);
     totalRef.current = 0;
     correctRef.current = 0;
-    setExercise(generateAdjectiveExercise());
-    setInput("");
-    setSubmitted(false);
-    setIsCorrect(false);
+    const ex = generateAdjectiveExercise();
+    setExercise(ex);
+    setOptions(getAdjectiveEndingOptions());
+    setSelected(null);
+    setIsCorrect(null);
     setShowCelebration(false);
     setPhase("playing");
-    setTimeout(() => inputRef.current?.focus(), 300);
   }, []);
 
   const percentage = total > 0 ? Math.round((correct / total) * 100) : 0;
 
-  const handleCheck = useCallback(() => {
-    const trimmed = input.trim().toLowerCase();
-    const answer = exercise.correctEnding.toLowerCase();
-    const result = trimmed === answer;
+  const handleSelect = useCallback((option: string) => {
+    if (selected !== null) return;
 
+    const correctAnswer = "-" + exercise.correctEnding;
+    const result = option === correctAnswer;
+
+    setSelected(option);
     setIsCorrect(result);
-    setSubmitted(true);
     setTotal((prev) => {
       totalRef.current = prev + 1;
       return prev + 1;
@@ -134,10 +131,9 @@ export default function AdjectivesScreen() {
       triggerShake();
     }
     recordAnswer("adjectives", result);
-  }, [input, exercise.correctEnding, triggerShake]);
+  }, [selected, exercise.correctEnding, triggerShake]);
 
   const handleNext = useCallback(() => {
-    // Check if we've reached the target
     if (totalRef.current >= targetCount) {
       recordSession({
         mode: "adjectives",
@@ -151,7 +147,6 @@ export default function AdjectivesScreen() {
       return;
     }
 
-    // Stop any in-flight shake animation
     shakeAnimRef.current?.stop();
     shakeAnim.setValue(0);
 
@@ -160,19 +155,18 @@ export default function AdjectivesScreen() {
       duration: 150,
       useNativeDriver,
     }).start(() => {
-      setExercise(generateAdjectiveExercise());
-      setInput("");
-      setSubmitted(false);
-      setIsCorrect(false);
+      const ex = generateAdjectiveExercise();
+      setExercise(ex);
+      setOptions(getAdjectiveEndingOptions());
+      setSelected(null);
+      setIsCorrect(null);
       setShowCelebration(false);
 
       Animated.timing(fadeAnim, {
         toValue: 1,
         duration: 200,
         useNativeDriver,
-      }).start(() => {
-        inputRef.current?.focus();
-      });
+      }).start();
     });
   }, [fadeAnim, shakeAnim, targetCount]);
 
@@ -199,142 +193,134 @@ export default function AdjectivesScreen() {
     );
   }
 
-  const inputBorderColor = submitted
-    ? isCorrect
-      ? colors.success
-      : colors.error
-    : colors.primary;
+  const correctAnswer = "-" + exercise.correctEnding;
 
-  // Build the sentence display
+  const getOptionStyle = (option: string) => {
+    if (selected === null) return styles.optionDefault;
+    if (option === selected && isCorrect) return styles.optionCorrect;
+    if (option === selected && !isCorrect) return styles.optionWrong;
+    if (option === correctAnswer) return styles.optionReveal;
+    return styles.optionDimmed;
+  };
+
+  const getOptionTextStyle = (option: string) => {
+    if (selected === null) return styles.optionTextDefault;
+    if (option === selected && isCorrect) return styles.optionTextCorrect;
+    if (option === selected && !isCorrect) return styles.optionTextWrong;
+    if (option === correctAnswer) return styles.optionTextReveal;
+    return styles.optionTextDimmed;
+  };
+
   const articlePart = exercise.article ? exercise.article + " " : "";
   const nounPhrase = `${articlePart}${exercise.adjective}___  ${exercise.noun}`;
 
   return (
-    <KeyboardAvoidingView
+    <ScrollView
       style={styles.container}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
+      contentContainerStyle={styles.scrollContent}
     >
       <CelebrationOverlay visible={showCelebration} onFinish={() => setShowCelebration(false)} />
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
-      >
-        <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
-          {/* Score + Progress */}
-          <View style={styles.scoreRow}>
-            <Text style={styles.progressText}>
-              {total}/{targetCount}
-            </Text>
-            <Text style={styles.scoreText}>
-              {correct}/{total}
-              {total > 0 ? ` (${percentage}%)` : ""}
-            </Text>
-          </View>
+      <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
+        {/* Score + Progress */}
+        <View style={styles.scoreRow}>
+          <Text style={styles.progressText}>
+            {total}/{targetCount}
+          </Text>
+          <Text style={styles.scoreText}>
+            {correct}/{total}
+            {total > 0 ? ` (${percentage}%)` : ""}
+          </Text>
+        </View>
 
-          {/* Info badges */}
-          <View style={styles.badgeRow}>
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>
-                {ARTICLE_TYPE_LABELS[exercise.articleType]}
-              </Text>
-            </View>
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>
-                {CASE_LABELS[exercise.case]}
-              </Text>
-            </View>
-          </View>
-
-          {/* Sentence display */}
-          <View style={styles.sentenceCard}>
-            <Text style={styles.sentenceText}>
-              {exercise.sentenceBefore ? exercise.sentenceBefore + " " : ""}
-              <Text style={styles.nounPhrase}>{nounPhrase}</Text>
-              {exercise.sentenceAfter ? " " + exercise.sentenceAfter : ""}
+        {/* Info badges */}
+        <View style={styles.badgeRow}>
+          <View style={styles.badge}>
+            <Text style={styles.badgeText}>
+              {ARTICLE_TYPE_LABELS[exercise.articleType]}
             </Text>
           </View>
-
-          {/* Hint text */}
-          <View style={styles.hintRow}>
-            <Text style={styles.hintText}>
-              <Text style={styles.hintWord}>{exercise.adjective}</Text>
-              <Text style={styles.hintTranslation}>
-                {" "}
-                ({exercise.adjectiveTranslation})
-              </Text>
-              {"  +  "}
-              <Text style={styles.hintWord}>{exercise.noun}</Text>
-              <Text style={styles.hintTranslation}>
-                {" "}
-                ({exercise.nounTranslation})
-              </Text>
+          <View style={styles.badge}>
+            <Text style={styles.badgeText}>
+              {CASE_LABELS[exercise.case]}
             </Text>
           </View>
+        </View>
 
-          {/* Input area */}
-          <Animated.View
-            style={[styles.inputArea, { transform: [{ translateX: shakeAnim }] }]}
-          >
-            <Text style={styles.adjectiveBase}>{exercise.adjective}</Text>
-            <TextInput
-              ref={inputRef}
-              style={[styles.textInput, { borderColor: inputBorderColor }]}
-              value={input}
-              onChangeText={setInput}
-              placeholder="..."
-              placeholderTextColor={colors.textMuted}
-              autoCapitalize="none"
-              autoCorrect={false}
-              editable={!submitted}
-              onSubmitEditing={!submitted && input.trim() ? handleCheck : undefined}
-            />
-          </Animated.View>
+        {/* Sentence display */}
+        <View style={styles.sentenceCard}>
+          <Text style={styles.sentenceText}>
+            {exercise.sentenceBefore ? exercise.sentenceBefore + " " : ""}
+            <Text style={styles.nounPhrase}>{nounPhrase}</Text>
+            {exercise.sentenceAfter ? " " + exercise.sentenceAfter : ""}
+          </Text>
+        </View>
 
-          {/* Feedback */}
-          {submitted && (
-            <View style={styles.feedbackRow}>
-              {isCorrect ? (
-                <Text style={styles.correctText}>Correct!</Text>
-              ) : (
-                <Text style={styles.wrongText}>
-                  Correct: {exercise.adjective}
-                  <Text style={styles.endingHighlight}>
-                    {exercise.correctEnding}
-                  </Text>
-                </Text>
-              )}
-            </View>
-          )}
+        {/* Hint text */}
+        <View style={styles.hintRow}>
+          <Text style={styles.hintText}>
+            <Text style={styles.hintWord}>{exercise.adjective}</Text>
+            <Text style={styles.hintTranslation}>
+              {" "}
+              ({exercise.adjectiveTranslation})
+            </Text>
+            {"  +  "}
+            <Text style={styles.hintWord}>{exercise.noun}</Text>
+            <Text style={styles.hintTranslation}>
+              {" "}
+              ({exercise.nounTranslation})
+            </Text>
+          </Text>
+        </View>
 
-          {/* Buttons */}
-          <View style={styles.buttonRow}>
-            {!submitted ? (
-              <TouchableOpacity
-                style={[
-                  styles.button,
-                  styles.checkButton,
-                  !input.trim() && styles.buttonDisabled,
-                ]}
-                onPress={handleCheck}
-                disabled={!input.trim()}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.buttonText}>Check</Text>
-              </TouchableOpacity>
+        {/* Multiple choice options */}
+        <Animated.View
+          style={[styles.optionsGrid, { transform: [{ translateX: shakeAnim }] }]}
+        >
+          {options.map((option) => (
+            <TouchableOpacity
+              key={option}
+              style={[styles.optionButton, getOptionStyle(option)]}
+              onPress={() => handleSelect(option)}
+              disabled={selected !== null}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.optionText, getOptionTextStyle(option)]}>
+                {option}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </Animated.View>
+
+        {/* Feedback */}
+        {selected !== null && (
+          <View style={styles.feedbackRow}>
+            {isCorrect ? (
+              <Text style={styles.correctText}>Correct!</Text>
             ) : (
-              <TouchableOpacity
-                style={[styles.button, styles.nextButton]}
-                onPress={handleNext}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.buttonText}>Next</Text>
-              </TouchableOpacity>
+              <Text style={styles.wrongText}>
+                Correct: {exercise.adjective}
+                <Text style={styles.endingHighlight}>
+                  {exercise.correctEnding}
+                </Text>
+              </Text>
             )}
           </View>
-        </Animated.View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+        )}
+
+        {/* Next button */}
+        {selected !== null && (
+          <View style={styles.buttonRow}>
+            <TouchableOpacity
+              style={[styles.button, styles.nextButton]}
+              onPress={handleNext}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.buttonText}>Next</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </Animated.View>
+    </ScrollView>
   );
 }
 
@@ -425,30 +411,62 @@ const styles = StyleSheet.create({
     fontStyle: "italic",
   },
 
-  // Input
-  inputArea: {
+  // Options grid
+  optionsGrid: {
     flexDirection: "row",
-    alignItems: "center",
+    flexWrap: "wrap",
+    justifyContent: "center",
+    gap: spacing.sm,
     marginBottom: spacing.lg,
+    width: "100%",
   },
-  adjectiveBase: {
-    color: colors.text,
-    fontSize: 28,
-    fontWeight: "700",
-    marginRight: 2,
-  },
-  textInput: {
+  optionButton: {
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderRadius: 12,
     borderWidth: 2,
-    borderColor: colors.primary,
-    borderRadius: 8,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    color: colors.text,
-    fontSize: 28,
-    fontWeight: "700",
     minWidth: 80,
-    textAlign: "center",
+    alignItems: "center",
+  },
+  optionText: {
+    fontSize: 22,
+    fontWeight: "700",
+  },
+  optionDefault: {
     backgroundColor: colors.surface,
+    borderColor: colors.surfaceLight,
+  },
+  optionCorrect: {
+    backgroundColor: "#16a34a22",
+    borderColor: colors.success,
+  },
+  optionWrong: {
+    backgroundColor: "#ef444422",
+    borderColor: colors.error,
+  },
+  optionReveal: {
+    backgroundColor: "#16a34a22",
+    borderColor: colors.success,
+  },
+  optionDimmed: {
+    backgroundColor: colors.surface,
+    borderColor: colors.surfaceLight,
+    opacity: 0.4,
+  },
+  optionTextDefault: {
+    color: colors.text,
+  },
+  optionTextCorrect: {
+    color: colors.success,
+  },
+  optionTextWrong: {
+    color: colors.error,
+  },
+  optionTextReveal: {
+    color: colors.success,
+  },
+  optionTextDimmed: {
+    color: colors.textMuted,
   },
 
   // Feedback
@@ -486,14 +504,8 @@ const styles = StyleSheet.create({
     minWidth: 180,
     alignItems: "center",
   },
-  checkButton: {
-    backgroundColor: colors.primary,
-  },
   nextButton: {
     backgroundColor: colors.success,
-  },
-  buttonDisabled: {
-    opacity: 0.4,
   },
   buttonText: {
     color: colors.text,

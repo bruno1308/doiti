@@ -37,6 +37,7 @@ export interface CaseSentence {
 }
 
 export type ExerciseMode = "gender" | "adjectives" | "cases";
+export type ExercisePhase = "setup" | "playing" | "summary";
 
 export interface SessionStats {
   mode: ExerciseMode;

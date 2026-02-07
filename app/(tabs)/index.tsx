@@ -10,11 +10,10 @@ import {
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { useRouter } from "expo-router";
-import { getStats, getAccuracy } from "../../lib/stats";
+import { getStats } from "../../lib/stats";
 import { AllStats, ExerciseMode, ModeStats } from "../../lib/types";
 import { colors, spacing } from "../../constants/theme";
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
 const owlMascot = require("../../assets/images/owl-mascot.png") as ImageSourcePropType;
 const genderCard = require("../../assets/images/gender-card.webp") as ImageSourcePropType;
 const adjectivesCard = require("../../assets/images/adjectives-card.webp") as ImageSourcePropType;
@@ -37,7 +36,6 @@ function ModeCard({
   modeStats,
   onPress,
 }: ModeCardProps) {
-  const accuracy = getAccuracy(modeStats);
   const practiced = modeStats.totalAttempted;
 
   return (
@@ -49,22 +47,15 @@ function ModeCard({
       <View style={styles.cardHeader}>
         <Image source={image} style={styles.cardImage} />
         <View style={styles.cardTitleContainer}>
-          <Text style={styles.cardTitle}>{title}</Text>
+          <View style={styles.cardTitleRow}>
+            <Text style={styles.cardTitle}>{title}</Text>
+            {practiced > 0 && (
+              <Text style={[styles.practicedText, { color: accentColor }]}>
+                {practiced} practiced
+              </Text>
+            )}
+          </View>
           <Text style={styles.cardSubtitle}>{subtitle}</Text>
-        </View>
-      </View>
-      <View style={styles.cardStats}>
-        <View style={styles.statItem}>
-          <Text style={[styles.statValue, { color: accentColor }]}>
-            {accuracy}%
-          </Text>
-          <Text style={styles.statLabel}>Accuracy</Text>
-        </View>
-        <View style={styles.statItem}>
-          <Text style={[styles.statValue, { color: accentColor }]}>
-            {practiced}
-          </Text>
-          <Text style={styles.statLabel}>Practiced</Text>
         </View>
       </View>
     </TouchableOpacity>
@@ -249,7 +240,6 @@ const styles = StyleSheet.create({
   cardHeader: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: spacing.md,
   },
   cardImage: {
     width: 56,
@@ -261,34 +251,23 @@ const styles = StyleSheet.create({
     marginLeft: spacing.md,
     flex: 1,
   },
+  cardTitleRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
   cardTitle: {
     fontSize: 18,
     fontWeight: "bold",
     color: colors.text,
   },
+  practicedText: {
+    fontSize: 13,
+    fontWeight: "600",
+  },
   cardSubtitle: {
     fontSize: 14,
     color: colors.textSecondary,
-    marginTop: 2,
-  },
-  cardStats: {
-    flexDirection: "row",
-    borderTopWidth: 1,
-    borderTopColor: colors.surfaceLight,
-    paddingTop: spacing.sm,
-  },
-  statItem: {
-    flex: 1,
-    alignItems: "center",
-  },
-  statValue: {
-    fontSize: 22,
-    fontWeight: "bold",
-    color: colors.primary,
-  },
-  statLabel: {
-    fontSize: 12,
-    color: colors.textMuted,
     marginTop: 2,
   },
   sessionRow: {

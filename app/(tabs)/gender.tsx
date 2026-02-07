@@ -15,7 +15,7 @@ import { useRouter } from "expo-router";
 import { colors, spacing } from "../../constants/theme";
 import { getRandomNoun, getArticleForGender } from "../../lib/exercise-logic";
 import { recordAnswer, recordSession } from "../../lib/stats";
-import CelebrationOverlay from "../../components/CelebrationOverlay";
+import CelebrationOverlay, { CelebrationVariant } from "../../components/CelebrationOverlay";
 import ExerciseSetup from "../../components/ExerciseSetup";
 import ExerciseSummary from "../../components/ExerciseSummary";
 import type { Noun, ExercisePhase } from "../../lib/types";
@@ -45,9 +45,12 @@ export default function GenderScreen() {
   const [total, setTotal] = useState(0);
   const [correct, setCorrect] = useState(0);
   const [showCelebration, setShowCelebration] = useState(false);
+  const [celebrationVariant, setCelebrationVariant] = useState<CelebrationVariant>("combo3");
+  const [combo, setCombo] = useState(0);
 
   const totalRef = useRef(0);
   const correctRef = useRef(0);
+  const comboRef = useRef(0);
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const shakeAnim = useRef(new Animated.Value(0)).current;
@@ -87,6 +90,8 @@ export default function GenderScreen() {
     setCurrentNoun(getNextNoun());
     setAnswer({ selected: null, isCorrect: null });
     setShowCelebration(false);
+    setCombo(0);
+    comboRef.current = 0;
     setPhase("playing");
   }, []);
 
@@ -105,8 +110,18 @@ export default function GenderScreen() {
           correctRef.current = prev + 1;
           return prev + 1;
         });
-        setShowCelebration(true);
+        comboRef.current += 1;
+        setCombo(comboRef.current);
+        if (comboRef.current === 3) {
+          setCelebrationVariant("combo3");
+          setShowCelebration(true);
+        } else if (comboRef.current >= 5 && comboRef.current % 5 === 0) {
+          setCelebrationVariant("combo5");
+          setShowCelebration(true);
+        }
       } else {
+        comboRef.current = 0;
+        setCombo(0);
         triggerShake();
       }
 
@@ -212,6 +227,7 @@ export default function GenderScreen() {
     <View style={styles.container}>
       <CelebrationOverlay
         visible={showCelebration}
+        variant={celebrationVariant}
         onFinish={() => setShowCelebration(false)}
       />
 

@@ -17,7 +17,7 @@ import { getShuffledCaseSentences } from "../../lib/exercise-logic";
 import { recordAnswer, recordSession } from "../../lib/stats";
 import { CaseSentence, ExercisePhase, GrammaticalCase } from "../../lib/types";
 import { colors, spacing } from "../../constants/theme";
-import CelebrationOverlay from "../../components/CelebrationOverlay";
+import CelebrationOverlay, { CelebrationVariant } from "../../components/CelebrationOverlay";
 import ExerciseSetup from "../../components/ExerciseSetup";
 import ExerciseSummary from "../../components/ExerciseSummary";
 
@@ -58,9 +58,12 @@ export default function CasesScreen() {
   const [totalCorrect, setTotalCorrect] = useState(0);
   const [questionsCompleted, setQuestionsCompleted] = useState(0);
   const [showCelebration, setShowCelebration] = useState(false);
+  const [celebrationVariant, setCelebrationVariant] = useState<CelebrationVariant>("combo3");
+  const [combo, setCombo] = useState(0);
 
   const totalRef = useRef(0);
   const correctRef = useRef(0);
+  const comboRef = useRef(0);
 
   // Record partial session on blur, reset to setup on focus
   useFocusEffect(
@@ -107,6 +110,8 @@ export default function CasesScreen() {
     setSelections({});
     setChecked(false);
     setShowCelebration(false);
+    setCombo(0);
+    comboRef.current = 0;
     setPhase("playing");
   }, []);
 
@@ -138,9 +143,20 @@ export default function CasesScreen() {
       return prev + correctCount;
     });
 
-    // Show celebration if all correct
+    // Combo tracking: all correct in this sentence = +1 combo
     if (correctCount === sentence.nounPhrases.length) {
-      setShowCelebration(true);
+      comboRef.current += 1;
+      setCombo(comboRef.current);
+      if (comboRef.current === 3) {
+        setCelebrationVariant("combo3");
+        setShowCelebration(true);
+      } else if (comboRef.current >= 5 && comboRef.current % 5 === 0) {
+        setCelebrationVariant("combo5");
+        setShowCelebration(true);
+      }
+    } else {
+      comboRef.current = 0;
+      setCombo(0);
     }
   }, [allSelected, checked, sentence, selections]);
 
@@ -276,7 +292,7 @@ export default function CasesScreen() {
 
   return (
     <View style={styles.container}>
-      <CelebrationOverlay visible={showCelebration} onFinish={() => setShowCelebration(false)} />
+      <CelebrationOverlay visible={showCelebration} variant={celebrationVariant} onFinish={() => setShowCelebration(false)} />
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}

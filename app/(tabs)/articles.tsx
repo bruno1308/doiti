@@ -17,7 +17,7 @@ import { generateArticleExercise, getArticleOptions } from "../../lib/exercise-l
 import { recordAnswer, recordSession } from "../../lib/stats";
 import { ArticleExercise, ExercisePhase } from "../../lib/types";
 import { colors, spacing } from "../../constants/theme";
-import CelebrationOverlay from "../../components/CelebrationOverlay";
+import CelebrationOverlay, { CelebrationVariant } from "../../components/CelebrationOverlay";
 import ExerciseSetup from "../../components/ExerciseSetup";
 import ExerciseSummary from "../../components/ExerciseSummary";
 
@@ -58,9 +58,12 @@ export default function ArticlesScreen() {
   const [correct, setCorrect] = useState(0);
   const [total, setTotal] = useState(0);
   const [showCelebration, setShowCelebration] = useState(false);
+  const [celebrationVariant, setCelebrationVariant] = useState<CelebrationVariant>("combo3");
+  const [combo, setCombo] = useState(0);
 
   const totalRef = useRef(0);
   const correctRef = useRef(0);
+  const comboRef = useRef(0);
 
   useFocusEffect(
     useCallback(() => {
@@ -111,6 +114,8 @@ export default function ArticlesScreen() {
     setSelected(null);
     setIsCorrect(null);
     setShowCelebration(false);
+    setCombo(0);
+    comboRef.current = 0;
     setPhase("playing");
   }, []);
 
@@ -132,8 +137,18 @@ export default function ArticlesScreen() {
         correctRef.current = prev + 1;
         return prev + 1;
       });
-      setShowCelebration(true);
+      comboRef.current += 1;
+      setCombo(comboRef.current);
+      if (comboRef.current === 3) {
+        setCelebrationVariant("combo3");
+        setShowCelebration(true);
+      } else if (comboRef.current >= 5 && comboRef.current % 5 === 0) {
+        setCelebrationVariant("combo5");
+        setShowCelebration(true);
+      }
     } else {
+      comboRef.current = 0;
+      setCombo(0);
       triggerShake();
     }
     recordAnswer("articles", result);
@@ -222,7 +237,7 @@ export default function ArticlesScreen() {
       style={styles.container}
       contentContainerStyle={styles.scrollContent}
     >
-      <CelebrationOverlay visible={showCelebration} onFinish={() => setShowCelebration(false)} />
+      <CelebrationOverlay visible={showCelebration} variant={celebrationVariant} onFinish={() => setShowCelebration(false)} />
       <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
         {/* Score + Progress */}
         <View style={styles.scoreRow}>

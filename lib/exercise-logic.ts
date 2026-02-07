@@ -1,21 +1,30 @@
 import nouns from "../data/nouns";
-import { adjectiveNounPairs, sentenceTemplates } from "../data/adjectives";
+import extraNouns from "../data/nouns-extra";
 import caseSentences from "../data/cases";
-import { possessiveNouns, possessiveTemplates, getPossessiveForm } from "../data/possessives";
-import { articleDrillNouns, articleDrillTemplates } from "../data/articleDrills";
-import { getAdjectiveEnding, getArticle } from "./declension";
+import caseExercises from "../data/case-exercises";
+import possessiveExercises from "../data/possessives-exercises";
+import articleExercises from "../data/article-exercises";
+import adjectiveExercises from "../data/adjective-exercises";
 import type {
   Noun,
   AdjectiveTemplate,
   CaseSentence,
   PossessiveExercise,
   ArticleExercise,
-  ArticleType,
   Gender,
-  Person,
 } from "./types";
+import type { AdjectiveExerciseData } from "../data/adjective-exercises";
+import type { PossessiveExerciseData } from "../data/possessives-exercises";
+import type { ArticleExerciseData } from "../data/article-exercises";
+import type { CaseExerciseData } from "../data/case-exercises";
 
-let adjectiveExerciseId = 0;
+// Merge original + extra nouns for the gender quiz
+const allNouns: Noun[] = [...nouns, ...extraNouns.map(n => ({
+  word: n.word,
+  gender: n.gender,
+  plural: n.plural,
+  translation: n.translation,
+}))];
 
 /**
  * Fisher-Yates shuffle. Returns a new array; does not mutate the input.
@@ -30,18 +39,18 @@ export function shuffle<T>(array: T[]): T[] {
 }
 
 /**
- * Pick a single random noun from the noun list.
+ * Pick a single random noun from the full noun list (original + extra).
  */
 export function getRandomNoun(): Noun {
-  const index = Math.floor(Math.random() * nouns.length);
-  return nouns[index];
+  const index = Math.floor(Math.random() * allNouns.length);
+  return allNouns[index];
 }
 
 /**
- * Return `count` randomly-selected nouns (no duplicates when count <= nouns.length).
+ * Return `count` randomly-selected nouns (no duplicates when count <= allNouns.length).
  */
 export function getRandomNouns(count: number): Noun[] {
-  return shuffle(nouns).slice(0, count);
+  return shuffle(allNouns).slice(0, count);
 }
 
 /**
@@ -52,143 +61,95 @@ export function getArticleForGender(gender: "m" | "f" | "n"): string {
   return map[gender];
 }
 
-/**
- * Generate a random adjective-ending exercise.
- *
- * Picks a random adjective-noun pair, a random sentence template, and a random
- * article type, then computes the correct article + adjective ending using the
- * declension helpers.  The template's `[NP]` placeholder is split into
- * sentenceBefore / sentenceAfter parts.
- */
+// --- Adjective Endings (pre-baked) ---
+
+let adjectiveExerciseId = 0;
+
 export function generateAdjectiveExercise(): AdjectiveTemplate {
-  const pair =
-    adjectiveNounPairs[
-      Math.floor(Math.random() * adjectiveNounPairs.length)
-    ];
-
-  const template =
-    sentenceTemplates[
-      Math.floor(Math.random() * sentenceTemplates.length)
-    ];
-
-  const articleTypes: ArticleType[] = ["definite", "indefinite", "none"];
-  const articleType =
-    articleTypes[Math.floor(Math.random() * articleTypes.length)];
-
-  const article = getArticle(articleType, template.case, pair.gender);
-  const correctEnding = getAdjectiveEnding(
-    articleType,
-    template.case,
-    pair.gender
-  );
-
-  const [sentenceBefore, sentenceAfter] = template.template.split("[NP]");
+  const data = adjectiveExercises[Math.floor(Math.random() * adjectiveExercises.length)];
 
   adjectiveExerciseId += 1;
 
   return {
     id: adjectiveExerciseId,
-    articleType,
-    case: template.case,
-    gender: pair.gender,
-    article,
-    noun: pair.noun,
-    nounTranslation: pair.nounTranslation,
-    adjective: pair.adjective,
-    adjectiveTranslation: pair.adjectiveTranslation,
-    correctEnding,
-    sentenceBefore: sentenceBefore ?? "",
-    sentenceAfter: sentenceAfter ?? "",
+    articleType: data.articleType,
+    case: data.case,
+    gender: data.gender,
+    article: data.article,
+    noun: data.noun,
+    nounTranslation: data.nounTranslation,
+    adjective: data.adjective,
+    adjectiveTranslation: data.adjectiveTranslation,
+    correctEnding: data.correctEnding,
+    sentenceBefore: data.sentenceBefore,
+    sentenceAfter: data.sentenceAfter,
   };
 }
 
-/**
- * Pick a single random case sentence.
- */
+// --- Case Identification (pre-baked) ---
+
+// Merge old + new case sentences
+const allCaseSentences: CaseSentence[] = [
+  ...caseSentences,
+  ...caseExercises.map((d: CaseExerciseData, i: number) => ({
+    id: caseSentences.length + i + 1,
+    sentence: d.sentence,
+    nounPhrases: d.nounPhrases,
+    translation: d.translation,
+  })),
+];
+
 export function getRandomCaseSentence(): CaseSentence {
-  const index = Math.floor(Math.random() * caseSentences.length);
-  return caseSentences[index];
+  const index = Math.floor(Math.random() * allCaseSentences.length);
+  return allCaseSentences[index];
 }
 
-/**
- * Return all case sentences in a shuffled order.
- */
 export function getShuffledCaseSentences(): CaseSentence[] {
-  return shuffle(caseSentences);
+  return shuffle(allCaseSentences);
 }
 
-// --- Possessive Pronouns ---
+// --- Possessive Pronouns (pre-baked) ---
 
 let possessiveExerciseId = 0;
 
-const allPersons: Person[] = ["ich", "du", "er", "sie_sg", "es", "wir", "ihr", "sie_pl", "Sie"];
-
-const englishPossessives: Record<Person, string> = {
-  ich: "my",
-  du: "your",
-  er: "his",
-  sie_sg: "her",
-  es: "its",
-  wir: "our",
-  ihr: "your",
-  sie_pl: "their",
-  Sie: "your",
-};
-
-/**
- * Generate a random possessive pronoun exercise.
- */
 export function generatePossessiveExercise(): PossessiveExercise {
-  const noun = possessiveNouns[Math.floor(Math.random() * possessiveNouns.length)];
-  const template = possessiveTemplates[Math.floor(Math.random() * possessiveTemplates.length)];
-  const person = allPersons[Math.floor(Math.random() * allPersons.length)];
-
-  const correctForm = getPossessiveForm(person, template.case, noun.gender);
-  const [sentenceBefore, sentenceAfter] = template.template.split("[PP]");
+  const data = possessiveExercises[Math.floor(Math.random() * possessiveExercises.length)];
 
   possessiveExerciseId += 1;
 
   return {
     id: possessiveExerciseId,
-    person,
-    case: template.case,
-    gender: noun.gender,
-    noun: noun.noun,
-    nounTranslation: noun.translation,
-    correctForm,
-    sentenceBefore: sentenceBefore ?? "",
-    sentenceAfter: sentenceAfter ?? "",
-    translation: template.translation.replace("[PP]", englishPossessives[person] + " " + noun.translation),
+    person: data.person,
+    case: data.case,
+    gender: data.gender,
+    noun: data.noun,
+    nounTranslation: data.nounTranslation,
+    correctForm: data.correctForm,
+    sentenceBefore: data.sentenceBefore,
+    sentenceAfter: data.sentenceAfter,
+    translation: data.translation,
   };
 }
 
-// --- Article Drills ---
+// --- Article Drills (pre-baked) ---
 
 let articleExerciseId = 0;
 
-/**
- * Generate a random article conjugation exercise.
- */
 export function generateArticleExercise(): ArticleExercise {
-  const noun = articleDrillNouns[Math.floor(Math.random() * articleDrillNouns.length)];
-  const template = articleDrillTemplates[Math.floor(Math.random() * articleDrillTemplates.length)];
-  const articleType: "definite" | "indefinite" = Math.random() < 0.5 ? "definite" : "indefinite";
-
-  const correctForm = getArticle(articleType, template.case, noun.gender);
-  const [sentenceBefore, sentenceAfter] = template.template.split("[ART]");
+  const data = articleExercises[Math.floor(Math.random() * articleExercises.length)];
 
   articleExerciseId += 1;
 
   return {
     id: articleExerciseId,
-    articleType,
-    case: template.case,
-    gender: noun.gender,
-    noun: noun.noun,
-    nounTranslation: noun.translation,
-    correctForm,
-    sentenceBefore: sentenceBefore ?? "",
-    sentenceAfter: sentenceAfter ?? "",
-    translation: template.translation.replace("[ART]", (articleType === "definite" ? "the" : "a") + " " + noun.translation),
+    articleType: data.articleType,
+    case: data.case,
+    gender: data.gender,
+    noun: data.noun,
+    nounTranslation: data.nounTranslation,
+    correctForm: data.correctForm,
+    sentenceBefore: data.sentenceBefore,
+    sentenceAfter: data.sentenceAfter,
+    translation: data.translation,
   };
 }

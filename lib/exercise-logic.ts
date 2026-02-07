@@ -123,6 +123,18 @@ let possessiveExerciseId = 0;
 
 const allPersons: Person[] = ["ich", "du", "er", "sie_sg", "es", "wir", "ihr", "sie_pl", "Sie"];
 
+const englishPossessives: Record<Person, string> = {
+  ich: "my",
+  du: "your",
+  er: "his",
+  sie_sg: "her",
+  es: "its",
+  wir: "our",
+  ihr: "your",
+  sie_pl: "their",
+  Sie: "your",
+};
+
 /**
  * Generate a random possessive pronoun exercise.
  */
@@ -146,7 +158,7 @@ export function generatePossessiveExercise(): PossessiveExercise {
     correctForm,
     sentenceBefore: sentenceBefore ?? "",
     sentenceAfter: sentenceAfter ?? "",
-    translation: template.translation.replace("[PP]", correctForm + " " + noun.noun),
+    translation: template.translation.replace("[PP]", englishPossessives[person] + " " + noun.translation),
   };
 }
 
@@ -177,6 +189,6 @@ export function generateArticleExercise(): ArticleExercise {
     correctForm,
     sentenceBefore: sentenceBefore ?? "",
     sentenceAfter: sentenceAfter ?? "",
-    translation: template.translation.replace("[ART]", correctForm + " " + noun.noun),
+    translation: template.translation.replace("[ART]", (articleType === "definite" ? "the" : "a") + " " + noun.translation),
   };
 }

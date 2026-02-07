@@ -205,7 +205,7 @@ export default function PossessivesScreen() {
     return styles.optionTextDimmed;
   };
 
-  const blankPhrase = `___  ${exercise.noun}`;
+  const blankPhrase = "___";
 
   return (
     <ScrollView

@@ -24,8 +24,14 @@
       "expo-router",
       "expo-font"
     ],
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/images/owl-mascot.png"
+    },
     "experiments": {
-      "typedRoutes": true
+      "typedRoutes": true,
+      "baseUrl": "/doiti"
     },
     "extra": {
       "router": {},

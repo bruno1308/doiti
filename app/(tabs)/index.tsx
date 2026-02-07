@@ -16,9 +16,9 @@ import { colors, spacing } from "../../constants/theme";
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const owlMascot = require("../../assets/images/owl-mascot.png") as ImageSourcePropType;
-const genderCard = require("../../assets/images/gender-card.png") as ImageSourcePropType;
-const adjectivesCard = require("../../assets/images/adjectives-card.png") as ImageSourcePropType;
-const casesCard = require("../../assets/images/cases-card.png") as ImageSourcePropType;
+const genderCard = require("../../assets/images/gender-card.webp") as ImageSourcePropType;
+const adjectivesCard = require("../../assets/images/adjectives-card.webp") as ImageSourcePropType;
+const casesCard = require("../../assets/images/cases-card.webp") as ImageSourcePropType;
 
 interface ModeCardProps {
   title: string;

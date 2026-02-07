@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import { Animated, Image, StyleSheet, View } from "react-native";
 
-const celebrationImage = require("../assets/images/celebration.png");
+const celebrationImage = require("../assets/images/celebration.webp");
 
 interface CelebrationOverlayProps {
   visible: boolean;

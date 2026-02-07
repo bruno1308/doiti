@@ -22,48 +22,42 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="history"
+        options={{
+          title: "History",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="time" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="gender"
         options={{
-          title: "Der/Die/Das",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="help-circle" size={size} color={color} />
-          ),
+          href: null,
         }}
       />
       <Tabs.Screen
         name="adjectives"
         options={{
-          title: "Adjectives",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="create" size={size} color={color} />
-          ),
+          href: null,
         }}
       />
       <Tabs.Screen
         name="cases"
         options={{
-          title: "Cases",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="book" size={size} color={color} />
-          ),
+          href: null,
         }}
       />
       <Tabs.Screen
         name="possessives"
         options={{
-          title: "Possessives",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="people" size={size} color={color} />
-          ),
+          href: null,
         }}
       />
       <Tabs.Screen
         name="articles"
         options={{
-          title: "Articles",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="document-text" size={size} color={color} />
-          ),
+          href: null,
         }}
       />
     </Tabs>

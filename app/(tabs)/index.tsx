@@ -11,7 +11,7 @@ import {
 import { useFocusEffect } from "@react-navigation/native";
 import { useRouter } from "expo-router";
 import { getStats } from "../../lib/stats";
-import { AllStats, ExerciseMode, ModeStats } from "../../lib/types";
+import { AllStats, ModeStats } from "../../lib/types";
 import { colors, spacing } from "../../constants/theme";
 
 const owlMascot = require("../../assets/images/owl-mascot.png") as ImageSourcePropType;
@@ -64,28 +64,6 @@ function ModeCard({
   );
 }
 
-const modeNames: Record<ExerciseMode, string> = {
-  gender: "Der/Die/Das",
-  adjectives: "Adjective Endings",
-  cases: "Case Identification",
-  possessives: "Possessive Pronouns",
-  articles: "Articles",
-};
-
-function formatDate(dateStr: string): string {
-  try {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString(undefined, {
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  } catch {
-    return dateStr;
-  }
-}
-
 export default function HomeScreen() {
   const router = useRouter();
   const [stats, setStats] = useState<AllStats>({
@@ -108,8 +86,6 @@ export default function HomeScreen() {
       };
     }, [])
   );
-
-  const recentSessions = stats.sessions.slice(0, 5);
 
   return (
     <ScrollView
@@ -173,43 +149,6 @@ export default function HomeScreen() {
         />
       </View>
 
-      {/* Recent Sessions */}
-      {recentSessions.length > 0 && (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Recent Sessions</Text>
-          {recentSessions.map((session, index) => {
-            const pct =
-              session.total > 0
-                ? Math.round((session.correct / session.total) * 100)
-                : 0;
-            return (
-              <View key={index} style={styles.sessionRow}>
-                <View style={styles.sessionInfo}>
-                  <Text style={styles.sessionMode}>
-                    {modeNames[session.mode] || session.mode}
-                  </Text>
-                  <Text style={styles.sessionDate}>
-                    {formatDate(session.date)}
-                  </Text>
-                </View>
-                <View style={styles.sessionScore}>
-                  <Text style={styles.sessionScoreText}>
-                    {session.correct}/{session.total}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.sessionPct,
-                      { color: pct >= 70 ? colors.success : colors.error },
-                    ]}
-                  >
-                    {pct}%
-                  </Text>
-                </View>
-              </View>
-            );
-          })}
-        </View>
-      )}
     </ScrollView>
   );
 }
@@ -292,41 +231,6 @@ const styles = StyleSheet.create({
   cardSubtitle: {
     fontSize: 14,
     color: colors.textSecondary,
-    marginTop: 2,
-  },
-  sessionRow: {
-    backgroundColor: colors.surface,
-    borderRadius: 10,
-    padding: spacing.md,
-    marginBottom: spacing.sm,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  sessionInfo: {
-    flex: 1,
-  },
-  sessionMode: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: colors.text,
-  },
-  sessionDate: {
-    fontSize: 12,
-    color: colors.textMuted,
-    marginTop: 2,
-  },
-  sessionScore: {
-    alignItems: "flex-end",
-  },
-  sessionScoreText: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: colors.textSecondary,
-  },
-  sessionPct: {
-    fontSize: 14,
-    fontWeight: "bold",
     marginTop: 2,
   },
 });

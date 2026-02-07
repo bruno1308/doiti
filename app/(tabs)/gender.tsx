@@ -11,6 +11,7 @@ import {
 
 const useNativeDriver = Platform.OS !== "web";
 import { useFocusEffect } from "@react-navigation/native";
+import { useRouter } from "expo-router";
 import { colors, spacing } from "../../constants/theme";
 import { getRandomNoun, getArticleForGender } from "../../lib/exercise-logic";
 import { recordAnswer, recordSession } from "../../lib/stats";
@@ -33,6 +34,7 @@ function getNextNoun(): Noun {
 }
 
 export default function GenderScreen() {
+  const router = useRouter();
   const [phase, setPhase] = useState<ExercisePhase>("setup");
   const [targetCount, setTargetCount] = useState(10);
   const [currentNoun, setCurrentNoun] = useState<Noun>(getNextNoun);
@@ -198,7 +200,7 @@ export default function GenderScreen() {
         correct={correct}
         total={total}
         accentColor={colors.primary}
-        onDone={() => setPhase("setup")}
+        onDone={() => router.navigate("/")}
       />
     );
   }

@@ -12,6 +12,7 @@ import {
 
 const useNativeDriver = Platform.OS !== "web";
 import { useFocusEffect } from "@react-navigation/native";
+import { useRouter } from "expo-router";
 import { getShuffledCaseSentences } from "../../lib/exercise-logic";
 import { recordAnswer, recordSession } from "../../lib/stats";
 import { CaseSentence, ExercisePhase, GrammaticalCase } from "../../lib/types";
@@ -46,6 +47,7 @@ const CASE_COLORS: Record<GrammaticalCase, string> = {
 };
 
 export default function CasesScreen() {
+  const router = useRouter();
   const [phase, setPhase] = useState<ExercisePhase>("setup");
   const [targetCount, setTargetCount] = useState(10);
   const [sentences, setSentences] = useState<CaseSentence[]>(() => getShuffledCaseSentences());
@@ -196,7 +198,7 @@ export default function CasesScreen() {
         correct={totalCorrect}
         total={totalAnswered}
         accentColor={colors.success}
-        onDone={() => setPhase("setup")}
+        onDone={() => router.navigate("/")}
       />
     );
   }

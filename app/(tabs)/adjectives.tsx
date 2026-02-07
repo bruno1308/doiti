@@ -14,6 +14,7 @@ import {
 
 const useNativeDriver = Platform.OS !== "web";
 import { useFocusEffect } from "@react-navigation/native";
+import { useRouter } from "expo-router";
 import { generateAdjectiveExercise } from "../../lib/exercise-logic";
 import { recordAnswer, recordSession } from "../../lib/stats";
 import { AdjectiveTemplate, ExercisePhase } from "../../lib/types";
@@ -40,6 +41,7 @@ const CASE_LABELS: Record<GrammaticalCase, string> = {
 };
 
 export default function AdjectivesScreen() {
+  const router = useRouter();
   const [phase, setPhase] = useState<ExercisePhase>("setup");
   const [targetCount, setTargetCount] = useState(10);
   const [exercise, setExercise] = useState<AdjectiveTemplate>(
@@ -192,7 +194,7 @@ export default function AdjectivesScreen() {
         correct={correct}
         total={total}
         accentColor={colors.warning}
-        onDone={() => setPhase("setup")}
+        onDone={() => router.navigate("/")}
       />
     );
   }

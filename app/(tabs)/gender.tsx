@@ -6,9 +6,10 @@ import {
   TouchableOpacity,
   Animated,
 } from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
 import { colors, spacing } from "../../constants/theme";
 import { getRandomNoun, getArticleForGender } from "../../lib/exercise-logic";
-import { recordAnswer } from "../../lib/stats";
+import { recordAnswer, recordSession } from "../../lib/stats";
 import type { Noun } from "../../lib/types";
 
 type GenderChoice = "m" | "f" | "n";
@@ -60,6 +61,22 @@ export default function GenderScreen() {
       recordAnswer("gender", isCorrect);
     },
     [answer.selected, currentNoun.gender]
+  );
+
+  // Record session when user leaves this tab
+  useFocusEffect(
+    useCallback(() => {
+      return () => {
+        if (total > 0) {
+          recordSession({
+            mode: "gender",
+            date: new Date().toISOString(),
+            total,
+            correct,
+          });
+        }
+      };
+    }, [total, correct])
   );
 
   const handleNext = useCallback(() => {

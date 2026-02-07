@@ -10,8 +10,9 @@ import {
   Animated,
   ScrollView,
 } from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
 import { generateAdjectiveExercise } from "../../lib/exercise-logic";
-import { recordAnswer } from "../../lib/stats";
+import { recordAnswer, recordSession } from "../../lib/stats";
 import { AdjectiveTemplate } from "../../lib/types";
 import { colors, spacing } from "../../constants/theme";
 
@@ -39,6 +40,22 @@ export default function AdjectivesScreen() {
   const [isCorrect, setIsCorrect] = useState(false);
   const [correct, setCorrect] = useState(0);
   const [total, setTotal] = useState(0);
+
+  // Record session when user leaves this tab
+  useFocusEffect(
+    useCallback(() => {
+      return () => {
+        if (total > 0) {
+          recordSession({
+            mode: "adjectives",
+            date: new Date().toISOString(),
+            total,
+            correct,
+          });
+        }
+      };
+    }, [total, correct])
+  );
 
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const inputRef = useRef<TextInput>(null);

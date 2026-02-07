@@ -7,8 +7,9 @@ import {
   Text,
   View,
 } from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
 import { getShuffledCaseSentences } from "../../lib/exercise-logic";
-import { recordAnswer } from "../../lib/stats";
+import { recordAnswer, recordSession } from "../../lib/stats";
 import { CaseSentence, GrammaticalCase } from "../../lib/types";
 import { colors, spacing } from "../../constants/theme";
 
@@ -42,6 +43,22 @@ export default function CasesScreen() {
   const [checked, setChecked] = useState(false);
   const [totalAnswered, setTotalAnswered] = useState(0);
   const [totalCorrect, setTotalCorrect] = useState(0);
+
+  // Record session when user leaves this tab
+  useFocusEffect(
+    useCallback(() => {
+      return () => {
+        if (totalAnswered > 0) {
+          recordSession({
+            mode: "cases",
+            date: new Date().toISOString(),
+            total: totalAnswered,
+            correct: totalCorrect,
+          });
+        }
+      };
+    }, [totalAnswered, totalCorrect])
+  );
 
   const fadeAnim = useRef(new Animated.Value(1)).current;
 
@@ -114,7 +131,7 @@ export default function CasesScreen() {
     return (
       <View key={phraseIndex} style={styles.phraseBlock}>
         <View style={styles.phraseHeader}>
-          <Text style={styles.phraseText}>&quot;{phrase.text}&quot;</Text>
+          <Text style={styles.phraseText}>"{phrase.text}"</Text>
           {checked && !isCorrect && (
             <Text style={[styles.correctionLabel, { color: CASE_COLORS[phrase.case] }]}>
               = {CASE_FULL_LABELS[phrase.case]}

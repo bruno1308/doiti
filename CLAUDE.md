@@ -49,18 +49,20 @@ doiti/
       cases.tsx           # Case identification
     _layout.tsx           # Root layout
   components/             # Shared UI components
-  data/                   # Bundled JSON data files
-    nouns.json            # German nouns with gender
-    adjective-templates.json
-    case-sentences.json
+  data/                   # Bundled TypeScript data files
+    nouns.ts              # 303 German nouns with gender, plural, translation
+    adjectives.ts         # 30 adjective-noun pairs + 20 sentence templates
+    cases.ts              # 25 annotated case identification sentences
   lib/                    # Utilities and logic
+    types.ts              # All TypeScript interfaces and types
+    declension.ts         # Adjective ending tables and article lookup
     stats.ts              # Progress tracking with AsyncStorage
-    exercise-logic.ts     # Quiz generation logic
-  constants/              # Theme colors, etc.
+    exercise-logic.ts     # Quiz generation and randomization logic
+  constants/              # Theme colors, spacing
 ```
 
 ## Design Decisions
-- ~1000 curated common nouns (not all 100k from source)
+- 303 curated common nouns (101 masculine, 102 feminine, 100 neuter)
 - Basic progress tracking (total/correct per mode, session history)
 - No spaced repetition, no accounts, no internet required
 - Immediate feedback on answers (green/red)

@@ -36,7 +36,35 @@ export interface CaseSentence {
   translation: string;
 }
 
-export type ExerciseMode = "gender" | "adjectives" | "cases";
+export type ExerciseMode = "gender" | "adjectives" | "cases" | "possessives" | "articles";
+export type Person = "ich" | "du" | "er" | "sie_sg" | "es" | "wir" | "ihr" | "sie_pl" | "Sie";
+
+export interface PossessiveExercise {
+  id: number;
+  person: Person;
+  case: GrammaticalCase;
+  gender: Gender;
+  noun: string;
+  nounTranslation: string;
+  correctForm: string;
+  sentenceBefore: string;
+  sentenceAfter: string;
+  translation: string;
+}
+
+export interface ArticleExercise {
+  id: number;
+  articleType: "definite" | "indefinite";
+  case: GrammaticalCase;
+  gender: Gender;
+  noun: string;
+  nounTranslation: string;
+  correctForm: string;
+  sentenceBefore: string;
+  sentenceAfter: string;
+  translation: string;
+}
+
 export type ExercisePhase = "setup" | "playing" | "summary";
 
 export interface SessionStats {
@@ -55,5 +83,7 @@ export interface AllStats {
   gender: ModeStats;
   adjectives: ModeStats;
   cases: ModeStats;
+  possessives: ModeStats;
+  articles: ModeStats;
   sessions: SessionStats[];
 }

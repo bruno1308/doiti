@@ -48,6 +48,24 @@ export default function TabLayout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="possessives"
+        options={{
+          title: "Possessives",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="people" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="articles"
+        options={{
+          title: "Articles",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="document-text" size={size} color={color} />
+          ),
+        }}
+      />
     </Tabs>
   );
 }

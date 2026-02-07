@@ -18,6 +18,8 @@ const owlMascot = require("../../assets/images/owl-mascot.png") as ImageSourcePr
 const genderCard = require("../../assets/images/gender-card.webp") as ImageSourcePropType;
 const adjectivesCard = require("../../assets/images/adjectives-card.webp") as ImageSourcePropType;
 const casesCard = require("../../assets/images/cases-card.webp") as ImageSourcePropType;
+const possessivesCard = require("../../assets/images/possessives-card.png") as ImageSourcePropType;
+const articlesCard = require("../../assets/images/articles-card.png") as ImageSourcePropType;
 
 interface ModeCardProps {
   title: string;
@@ -66,6 +68,8 @@ const modeNames: Record<ExerciseMode, string> = {
   gender: "Der/Die/Das",
   adjectives: "Adjective Endings",
   cases: "Case Identification",
+  possessives: "Possessive Pronouns",
+  articles: "Articles",
 };
 
 function formatDate(dateStr: string): string {
@@ -88,6 +92,8 @@ export default function HomeScreen() {
     gender: { totalAttempted: 0, totalCorrect: 0 },
     adjectives: { totalAttempted: 0, totalCorrect: 0 },
     cases: { totalAttempted: 0, totalCorrect: 0 },
+    possessives: { totalAttempted: 0, totalCorrect: 0 },
+    articles: { totalAttempted: 0, totalCorrect: 0 },
     sessions: [],
   });
 
@@ -146,6 +152,24 @@ export default function HomeScreen() {
           accentColor={colors.success}
           modeStats={stats.cases}
           onPress={() => router.push("/cases")}
+        />
+
+        <ModeCard
+          title="Possessive Pronouns"
+          subtitle="Conjugate mein, dein, sein..."
+          image={possessivesCard}
+          accentColor={colors.possessive}
+          modeStats={stats.possessives}
+          onPress={() => router.push("/possessives")}
+        />
+
+        <ModeCard
+          title="Articles"
+          subtitle="Practice definite & indefinite articles"
+          image={articlesCard}
+          accentColor={colors.articles}
+          modeStats={stats.articles}
+          onPress={() => router.push("/articles")}
         />
       </View>
 

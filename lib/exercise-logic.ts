@@ -1,13 +1,18 @@
 import nouns from "../data/nouns";
 import { adjectiveNounPairs, sentenceTemplates } from "../data/adjectives";
 import caseSentences from "../data/cases";
+import { possessiveNouns, possessiveTemplates, getPossessiveForm } from "../data/possessives";
+import { articleDrillNouns, articleDrillTemplates } from "../data/articleDrills";
 import { getAdjectiveEnding, getArticle } from "./declension";
 import type {
   Noun,
   AdjectiveTemplate,
   CaseSentence,
+  PossessiveExercise,
+  ArticleExercise,
   ArticleType,
   Gender,
+  Person,
 } from "./types";
 
 let adjectiveExerciseId = 0;
@@ -110,4 +115,68 @@ export function getRandomCaseSentence(): CaseSentence {
  */
 export function getShuffledCaseSentences(): CaseSentence[] {
   return shuffle(caseSentences);
+}
+
+// --- Possessive Pronouns ---
+
+let possessiveExerciseId = 0;
+
+const allPersons: Person[] = ["ich", "du", "er", "sie_sg", "es", "wir", "ihr", "sie_pl", "Sie"];
+
+/**
+ * Generate a random possessive pronoun exercise.
+ */
+export function generatePossessiveExercise(): PossessiveExercise {
+  const noun = possessiveNouns[Math.floor(Math.random() * possessiveNouns.length)];
+  const template = possessiveTemplates[Math.floor(Math.random() * possessiveTemplates.length)];
+  const person = allPersons[Math.floor(Math.random() * allPersons.length)];
+
+  const correctForm = getPossessiveForm(person, template.case, noun.gender);
+  const [sentenceBefore, sentenceAfter] = template.template.split("[PP]");
+
+  possessiveExerciseId += 1;
+
+  return {
+    id: possessiveExerciseId,
+    person,
+    case: template.case,
+    gender: noun.gender,
+    noun: noun.noun,
+    nounTranslation: noun.translation,
+    correctForm,
+    sentenceBefore: sentenceBefore ?? "",
+    sentenceAfter: sentenceAfter ?? "",
+    translation: template.translation.replace("[PP]", correctForm + " " + noun.noun),
+  };
+}
+
+// --- Article Drills ---
+
+let articleExerciseId = 0;
+
+/**
+ * Generate a random article conjugation exercise.
+ */
+export function generateArticleExercise(): ArticleExercise {
+  const noun = articleDrillNouns[Math.floor(Math.random() * articleDrillNouns.length)];
+  const template = articleDrillTemplates[Math.floor(Math.random() * articleDrillTemplates.length)];
+  const articleType: "definite" | "indefinite" = Math.random() < 0.5 ? "definite" : "indefinite";
+
+  const correctForm = getArticle(articleType, template.case, noun.gender);
+  const [sentenceBefore, sentenceAfter] = template.template.split("[ART]");
+
+  articleExerciseId += 1;
+
+  return {
+    id: articleExerciseId,
+    articleType,
+    case: template.case,
+    gender: noun.gender,
+    noun: noun.noun,
+    nounTranslation: noun.translation,
+    correctForm,
+    sentenceBefore: sentenceBefore ?? "",
+    sentenceAfter: sentenceAfter ?? "",
+    translation: template.translation.replace("[ART]", correctForm + " " + noun.noun),
+  };
 }

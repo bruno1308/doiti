@@ -7,6 +7,8 @@ const defaultStats: AllStats = {
   gender: { totalAttempted: 0, totalCorrect: 0 },
   adjectives: { totalAttempted: 0, totalCorrect: 0 },
   cases: { totalAttempted: 0, totalCorrect: 0 },
+  possessives: { totalAttempted: 0, totalCorrect: 0 },
+  articles: { totalAttempted: 0, totalCorrect: 0 },
   sessions: [],
 };
 
@@ -14,7 +16,8 @@ export async function getStats(): Promise<AllStats> {
   const raw = await AsyncStorage.getItem(STATS_KEY);
   if (!raw) return JSON.parse(JSON.stringify(defaultStats));
   try {
-    return JSON.parse(raw);
+    const parsed = JSON.parse(raw);
+    return { ...JSON.parse(JSON.stringify(defaultStats)), ...parsed };
   } catch {
     return JSON.parse(JSON.stringify(defaultStats));
   }

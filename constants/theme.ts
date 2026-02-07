@@ -14,6 +14,8 @@ export const colors = {
   masculine: "#3b82f6",
   feminine: "#ec4899",
   neuter: "#22c55e",
+  possessive: "#a855f7",
+  articles: "#06b6d4",
 };
 
 export const spacing = {

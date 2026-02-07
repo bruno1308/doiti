@@ -1,0 +1,486 @@
+import React, { useState, useRef, useCallback } from "react";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  KeyboardAvoidingView,
+  Platform,
+  Animated,
+  ScrollView,
+  ImageSourcePropType,
+} from "react-native";
+
+const useNativeDriver = Platform.OS !== "web";
+import { useFocusEffect } from "@react-navigation/native";
+import { useRouter } from "expo-router";
+import { generateArticleExercise } from "../../lib/exercise-logic";
+import { recordAnswer, recordSession } from "../../lib/stats";
+import { ArticleExercise, ExercisePhase } from "../../lib/types";
+import { colors, spacing } from "../../constants/theme";
+import CelebrationOverlay from "../../components/CelebrationOverlay";
+import ExerciseSetup from "../../components/ExerciseSetup";
+import ExerciseSummary from "../../components/ExerciseSummary";
+
+import type { GrammaticalCase } from "../../lib/types";
+
+const exerciseImage = require("../../assets/images/articles-card.png") as ImageSourcePropType;
+
+const ARTICLE_TYPE_LABELS: Record<"definite" | "indefinite", string> = {
+  definite: "Definite article",
+  indefinite: "Indefinite article",
+};
+
+const CASE_LABELS: Record<GrammaticalCase, string> = {
+  nominativ: "Nominativ",
+  akkusativ: "Akkusativ",
+  dativ: "Dativ",
+  genitiv: "Genitiv",
+};
+
+const GENDER_HINTS: Record<string, string> = {
+  m: "masculine",
+  f: "feminine",
+  n: "neuter",
+};
+
+export default function ArticlesScreen() {
+  const router = useRouter();
+  const [phase, setPhase] = useState<ExercisePhase>("setup");
+  const [targetCount, setTargetCount] = useState(10);
+  const [exercise, setExercise] = useState<ArticleExercise>(
+    () => generateArticleExercise()
+  );
+  const [input, setInput] = useState("");
+  const [submitted, setSubmitted] = useState(false);
+  const [isCorrect, setIsCorrect] = useState(false);
+  const [correct, setCorrect] = useState(0);
+  const [total, setTotal] = useState(0);
+  const [showCelebration, setShowCelebration] = useState(false);
+
+  const totalRef = useRef(0);
+  const correctRef = useRef(0);
+
+  useFocusEffect(
+    useCallback(() => {
+      setPhase("setup");
+      return () => {
+        if (totalRef.current > 0) {
+          recordSession({
+            mode: "articles",
+            date: new Date().toISOString(),
+            total: totalRef.current,
+            correct: correctRef.current,
+          });
+          totalRef.current = 0;
+          correctRef.current = 0;
+        }
+      };
+    }, [])
+  );
+
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+  const shakeAnim = useRef(new Animated.Value(0)).current;
+  const shakeAnimRef = useRef<Animated.CompositeAnimation | null>(null);
+  const inputRef = useRef<TextInput>(null);
+
+  const triggerShake = useCallback(() => {
+    shakeAnim.setValue(0);
+    const anim = Animated.sequence([
+      Animated.timing(shakeAnim, { toValue: 10, duration: 50, useNativeDriver }),
+      Animated.timing(shakeAnim, { toValue: -10, duration: 50, useNativeDriver }),
+      Animated.timing(shakeAnim, { toValue: 8, duration: 50, useNativeDriver }),
+      Animated.timing(shakeAnim, { toValue: -8, duration: 50, useNativeDriver }),
+      Animated.timing(shakeAnim, { toValue: 0, duration: 50, useNativeDriver }),
+    ]);
+    shakeAnimRef.current = anim;
+    anim.start(() => {
+      shakeAnimRef.current = null;
+    });
+  }, [shakeAnim]);
+
+  const handleStart = useCallback((count: number) => {
+    setTargetCount(count);
+    setTotal(0);
+    setCorrect(0);
+    totalRef.current = 0;
+    correctRef.current = 0;
+    setExercise(generateArticleExercise());
+    setInput("");
+    setSubmitted(false);
+    setIsCorrect(false);
+    setShowCelebration(false);
+    setPhase("playing");
+    setTimeout(() => inputRef.current?.focus(), 300);
+  }, []);
+
+  const percentage = total > 0 ? Math.round((correct / total) * 100) : 0;
+
+  const handleCheck = useCallback(() => {
+    const trimmed = input.trim().toLowerCase();
+    const answer = exercise.correctForm.toLowerCase();
+    const result = trimmed === answer;
+
+    setIsCorrect(result);
+    setSubmitted(true);
+    setTotal((prev) => {
+      totalRef.current = prev + 1;
+      return prev + 1;
+    });
+    if (result) {
+      setCorrect((prev) => {
+        correctRef.current = prev + 1;
+        return prev + 1;
+      });
+      setShowCelebration(true);
+    } else {
+      triggerShake();
+    }
+    recordAnswer("articles", result);
+  }, [input, exercise.correctForm, triggerShake]);
+
+  const handleNext = useCallback(() => {
+    if (totalRef.current >= targetCount) {
+      recordSession({
+        mode: "articles",
+        date: new Date().toISOString(),
+        total: totalRef.current,
+        correct: correctRef.current,
+      });
+      totalRef.current = 0;
+      correctRef.current = 0;
+      setPhase("summary");
+      return;
+    }
+
+    shakeAnimRef.current?.stop();
+    shakeAnim.setValue(0);
+
+    Animated.timing(fadeAnim, {
+      toValue: 0,
+      duration: 150,
+      useNativeDriver,
+    }).start(() => {
+      setExercise(generateArticleExercise());
+      setInput("");
+      setSubmitted(false);
+      setIsCorrect(false);
+      setShowCelebration(false);
+
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver,
+      }).start(() => {
+        inputRef.current?.focus();
+      });
+    });
+  }, [fadeAnim, shakeAnim, targetCount]);
+
+  if (phase === "setup") {
+    return (
+      <ExerciseSetup
+        title="Articles"
+        subtitle="Practice definite & indefinite articles"
+        image={exerciseImage}
+        accentColor={colors.articles}
+        onStart={handleStart}
+      />
+    );
+  }
+
+  if (phase === "summary") {
+    return (
+      <ExerciseSummary
+        correct={correct}
+        total={total}
+        accentColor={colors.articles}
+        onDone={() => router.navigate("/")}
+      />
+    );
+  }
+
+  const inputBorderColor = submitted
+    ? isCorrect
+      ? colors.success
+      : colors.error
+    : colors.primary;
+
+  const blankPhrase = `___  ${exercise.noun}`;
+
+  return (
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
+    >
+      <CelebrationOverlay visible={showCelebration} onFinish={() => setShowCelebration(false)} />
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+      >
+        <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
+          {/* Score + Progress */}
+          <View style={styles.scoreRow}>
+            <Text style={styles.progressText}>
+              {total}/{targetCount}
+            </Text>
+            <Text style={styles.scoreText}>
+              {correct}/{total}
+              {total > 0 ? ` (${percentage}%)` : ""}
+            </Text>
+          </View>
+
+          {/* Info badges */}
+          <View style={styles.badgeRow}>
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>
+                {ARTICLE_TYPE_LABELS[exercise.articleType]}
+              </Text>
+            </View>
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>
+                {CASE_LABELS[exercise.case]}
+              </Text>
+            </View>
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>
+                {GENDER_HINTS[exercise.gender]}
+              </Text>
+            </View>
+          </View>
+
+          {/* Sentence display */}
+          <View style={styles.sentenceCard}>
+            <Text style={styles.sentenceText}>
+              {exercise.sentenceBefore ? exercise.sentenceBefore + " " : ""}
+              <Text style={styles.nounPhrase}>{blankPhrase}</Text>
+              {exercise.sentenceAfter ? " " + exercise.sentenceAfter : ""}
+            </Text>
+          </View>
+
+          {/* Hint text */}
+          <View style={styles.hintRow}>
+            <Text style={styles.hintText}>
+              <Text style={styles.hintWord}>{exercise.noun}</Text>
+              <Text style={styles.hintTranslation}>
+                {" "}({exercise.nounTranslation})
+              </Text>
+            </Text>
+          </View>
+
+          {/* Input area */}
+          <Animated.View
+            style={[styles.inputArea, { transform: [{ translateX: shakeAnim }] }]}
+          >
+            <TextInput
+              ref={inputRef}
+              style={[styles.textInput, { borderColor: inputBorderColor }]}
+              value={input}
+              onChangeText={setInput}
+              placeholder="..."
+              placeholderTextColor={colors.textMuted}
+              autoCapitalize="none"
+              autoCorrect={false}
+              editable={!submitted}
+              onSubmitEditing={!submitted && input.trim() ? handleCheck : undefined}
+            />
+          </Animated.View>
+
+          {/* Feedback */}
+          {submitted && (
+            <View style={styles.feedbackRow}>
+              {isCorrect ? (
+                <Text style={styles.correctText}>Correct!</Text>
+              ) : (
+                <Text style={styles.wrongText}>
+                  Correct: <Text style={styles.endingHighlight}>{exercise.correctForm}</Text> {exercise.noun}
+                </Text>
+              )}
+              <Text style={styles.translationText}>{exercise.translation}</Text>
+            </View>
+          )}
+
+          {/* Buttons */}
+          <View style={styles.buttonRow}>
+            {!submitted ? (
+              <TouchableOpacity
+                style={[
+                  styles.button,
+                  styles.checkButton,
+                  !input.trim() && styles.buttonDisabled,
+                ]}
+                onPress={handleCheck}
+                disabled={!input.trim()}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.buttonText}>Check</Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                style={[styles.button, styles.nextButton]}
+                onPress={handleNext}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.buttonText}>Next</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </Animated.View>
+      </ScrollView>
+    </KeyboardAvoidingView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    padding: spacing.lg,
+  },
+  content: {
+    flex: 1,
+    alignItems: "center",
+  },
+  scoreRow: {
+    alignSelf: "flex-end",
+    marginBottom: spacing.md,
+    alignItems: "flex-end",
+  },
+  progressText: {
+    color: colors.articles,
+    fontSize: 14,
+    fontWeight: "600",
+    marginBottom: 2,
+  },
+  scoreText: {
+    color: colors.textSecondary,
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  badgeRow: {
+    flexDirection: "row",
+    gap: spacing.sm,
+    marginBottom: spacing.lg,
+  },
+  badge: {
+    backgroundColor: colors.surfaceLight,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: 12,
+  },
+  badgeText: {
+    color: colors.textSecondary,
+    fontSize: 13,
+    fontWeight: "500",
+  },
+  sentenceCard: {
+    backgroundColor: colors.surface,
+    borderRadius: 12,
+    padding: spacing.lg,
+    width: "100%",
+    marginBottom: spacing.lg,
+  },
+  sentenceText: {
+    color: colors.text,
+    fontSize: 20,
+    lineHeight: 30,
+    textAlign: "center",
+  },
+  nounPhrase: {
+    color: colors.articles,
+    fontWeight: "700",
+  },
+  hintRow: {
+    marginBottom: spacing.xl,
+  },
+  hintText: {
+    color: colors.textSecondary,
+    fontSize: 15,
+    textAlign: "center",
+  },
+  hintWord: {
+    color: colors.text,
+    fontWeight: "600",
+  },
+  hintTranslation: {
+    color: colors.textMuted,
+    fontStyle: "italic",
+  },
+  inputArea: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: spacing.lg,
+  },
+  textInput: {
+    borderWidth: 2,
+    borderColor: colors.primary,
+    borderRadius: 8,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    color: colors.text,
+    fontSize: 28,
+    fontWeight: "700",
+    minWidth: 140,
+    textAlign: "center",
+    backgroundColor: colors.surface,
+  },
+  feedbackRow: {
+    marginBottom: spacing.lg,
+    minHeight: 30,
+    alignItems: "center",
+  },
+  correctText: {
+    color: colors.success,
+    fontSize: 18,
+    fontWeight: "700",
+    textAlign: "center",
+  },
+  wrongText: {
+    color: colors.error,
+    fontSize: 18,
+    fontWeight: "600",
+    textAlign: "center",
+  },
+  endingHighlight: {
+    color: colors.articles,
+    fontWeight: "900",
+    textDecorationLine: "underline",
+  },
+  translationText: {
+    color: colors.textMuted,
+    fontSize: 14,
+    fontStyle: "italic",
+    marginTop: spacing.xs,
+    textAlign: "center",
+  },
+  buttonRow: {
+    width: "100%",
+    alignItems: "center",
+  },
+  button: {
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.xl,
+    borderRadius: 12,
+    minWidth: 180,
+    alignItems: "center",
+  },
+  checkButton: {
+    backgroundColor: colors.primary,
+  },
+  nextButton: {
+    backgroundColor: colors.success,
+  },
+  buttonDisabled: {
+    opacity: 0.4,
+  },
+  buttonText: {
+    color: colors.text,
+    fontSize: 18,
+    fontWeight: "700",
+  },
+});

@@ -21,9 +21,15 @@ import CelebrationOverlay, { CelebrationVariant } from "../../components/Celebra
 import ExerciseSetup from "../../components/ExerciseSetup";
 import ExerciseSummary from "../../components/ExerciseSummary";
 
-import type { ArticleType, GrammaticalCase } from "../../lib/types";
+import type { ArticleType, Gender, GrammaticalCase } from "../../lib/types";
 
 const adjectivesCard = require("../../assets/images/adjectives-card.webp") as ImageSourcePropType;
+
+const GENDER_LABELS: Record<Gender, string> = {
+  m: "Maskulin",
+  f: "Feminin",
+  n: "Neutrum",
+};
 
 const ARTICLE_TYPE_LABELS: Record<ArticleType, string> = {
   definite: "Definite article",
@@ -257,6 +263,11 @@ export default function AdjectivesScreen() {
           <View style={styles.badge}>
             <Text style={styles.badgeText}>
               {CASE_LABELS[exercise.case]}
+            </Text>
+          </View>
+          <View style={styles.badge}>
+            <Text style={styles.badgeText}>
+              {GENDER_LABELS[exercise.gender]}
             </Text>
           </View>
         </View>

@@ -22,9 +22,15 @@ import ExerciseSetup from "../../components/ExerciseSetup";
 import ExerciseSummary from "../../components/ExerciseSummary";
 import { personLabels } from "../../data/possessives";
 
-import type { GrammaticalCase } from "../../lib/types";
+import type { GrammaticalCase, Gender } from "../../lib/types";
 
 const exerciseImage = require("../../assets/images/possessives-card.png") as ImageSourcePropType;
+
+const GENDER_LABELS: Record<Gender, string> = {
+  m: "Maskulin",
+  f: "Feminin",
+  n: "Neutrum",
+};
 
 const CASE_LABELS: Record<GrammaticalCase, string> = {
   nominativ: "Nominativ",
@@ -252,6 +258,11 @@ export default function PossessivesScreen() {
               {CASE_LABELS[exercise.case]}
             </Text>
           </View>
+          <View style={styles.badge}>
+            <Text style={styles.badgeText}>
+              {GENDER_LABELS[exercise.gender]}
+            </Text>
+          </View>
         </View>
 
         {/* Sentence display */}
@@ -354,6 +365,8 @@ const styles = StyleSheet.create({
   },
   badgeRow: {
     flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
     gap: spacing.sm,
     marginBottom: spacing.lg,
   },

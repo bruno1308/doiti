@@ -38,9 +38,9 @@ const CASE_LABELS: Record<GrammaticalCase, string> = {
 };
 
 const GENDER_HINTS: Record<string, string> = {
-  m: "masculine",
-  f: "feminine",
-  n: "neuter",
+  m: "Maskulin",
+  f: "Feminin",
+  n: "Neutrum",
 };
 
 export default function ArticlesScreen() {

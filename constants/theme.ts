@@ -17,6 +17,8 @@ export const colors = {
   possessive: "#a855f7",
   articles: "#06b6d4",
   pronouns: "#f43f5e",
+  praeteritum: "#f97316",
+  perfekt: "#14b8a6",
 };
 
 export const spacing = {

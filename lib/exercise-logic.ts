@@ -12,6 +12,8 @@ import type {
   PossessiveExercise,
   ArticleExercise,
   PronounExercise,
+  PraeteritumExercise,
+  PerfektExercise,
   Gender,
   Person,
   ArticleType,
@@ -24,6 +26,10 @@ import type { CaseExerciseData } from "../data/case-exercises";
 import type { PronounExerciseData } from "../data/pronoun-exercises";
 
 import pronounExercises from "../data/pronoun-exercises";
+import praeteritumExercises from "../data/praeteritum-exercises";
+import perfektExercises from "../data/perfekt-exercises";
+import type { PraeteritumExerciseData } from "../data/praeteritum-exercises";
+import type { PerfektExerciseData } from "../data/perfekt-exercises";
 
 // Merge original + extra nouns for the gender quiz
 const allNouns: Noun[] = [...nouns, ...extraNouns.map(n => ({
@@ -277,4 +283,64 @@ export function getPronounOptions(person: Person, grammaticalCase: GrammaticalCa
   wrong = shuffle(wrong).slice(0, 3);
 
   return shuffle([correctForm].concat(wrong));
+}
+
+// --- Prateritum (pre-baked) ---
+
+let praeteritumExerciseId = 0;
+
+export function generatePraeteritumExercise(): PraeteritumExercise {
+  const data = praeteritumExercises[Math.floor(Math.random() * praeteritumExercises.length)];
+
+  praeteritumExerciseId += 1;
+
+  return {
+    id: praeteritumExerciseId,
+    infinitive: data.infinitive,
+    correctForm: data.correctForm,
+    sentenceBefore: data.sentenceBefore,
+    sentenceAfter: data.sentenceAfter,
+    particle: data.particle,
+    translation: data.translation,
+  };
+}
+
+/**
+ * Generate 3 wrong Prateritum options by picking other correctForm values from the pool.
+ */
+export function getPraeteritumOptions(correctForm: string): string[] {
+  const allForms = praeteritumExercises.map(e => e.correctForm);
+  const uniqueWrong = [...new Set(allForms.filter(f => f.toLowerCase() !== correctForm.toLowerCase()))];
+  const wrong = shuffle(uniqueWrong).slice(0, 3);
+  return shuffle([correctForm, ...wrong]);
+}
+
+// --- Perfekt (pre-baked) ---
+
+let perfektExerciseId = 0;
+
+export function generatePerfektExercise(): PerfektExercise {
+  const data = perfektExercises[Math.floor(Math.random() * perfektExercises.length)];
+
+  perfektExerciseId += 1;
+
+  return {
+    id: perfektExerciseId,
+    infinitive: data.infinitive,
+    auxiliary: data.auxiliary,
+    pastParticiple: data.pastParticiple,
+    sentenceBefore: data.sentenceBefore,
+    sentenceAfter: data.sentenceAfter,
+    translation: data.translation,
+  };
+}
+
+/**
+ * Generate 3 wrong Perfekt past participle options from the pool.
+ */
+export function getPerfektOptions(correctForm: string): string[] {
+  const allForms = perfektExercises.map(e => e.pastParticiple);
+  const uniqueWrong = [...new Set(allForms.filter(f => f !== correctForm))];
+  const wrong = shuffle(uniqueWrong).slice(0, 3);
+  return shuffle([correctForm, ...wrong]);
 }

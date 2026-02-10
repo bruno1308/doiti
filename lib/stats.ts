@@ -10,6 +10,8 @@ const defaultStats: AllStats = {
   possessives: { totalAttempted: 0, totalCorrect: 0 },
   articles: { totalAttempted: 0, totalCorrect: 0 },
   pronouns: { totalAttempted: 0, totalCorrect: 0 },
+  praeteritum: { totalAttempted: 0, totalCorrect: 0 },
+  perfekt: { totalAttempted: 0, totalCorrect: 0 },
   sessions: [],
 };
 

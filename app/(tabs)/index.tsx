@@ -74,6 +74,8 @@ export default function HomeScreen() {
     possessives: { totalAttempted: 0, totalCorrect: 0 },
     articles: { totalAttempted: 0, totalCorrect: 0 },
     pronouns: { totalAttempted: 0, totalCorrect: 0 },
+    praeteritum: { totalAttempted: 0, totalCorrect: 0 },
+    perfekt: { totalAttempted: 0, totalCorrect: 0 },
     sessions: [],
   });
 
@@ -157,6 +159,24 @@ export default function HomeScreen() {
           accentColor={colors.pronouns}
           modeStats={stats.pronouns}
           onPress={() => router.push("/pronouns")}
+        />
+
+        <ModeCard
+          title="Präteritum"
+          subtitle="Practice simple past tense verb forms"
+          image={articlesCard}
+          accentColor={colors.praeteritum}
+          modeStats={stats.praeteritum}
+          onPress={() => router.push("/praeteritum")}
+        />
+
+        <ModeCard
+          title="Perfekt"
+          subtitle="Practice past participle forms"
+          image={articlesCard}
+          accentColor={colors.perfekt}
+          modeStats={stats.perfekt}
+          onPress={() => router.push("/perfekt")}
         />
       </View>
 

@@ -349,10 +349,10 @@ export function generatePerfektExercise(): PerfektExercise {
 }
 
 /**
- * Generate 3 wrong Perfekt options using other tense forms of the SAME verb
- * with "ge" prefixed so they visually resemble real past participles.
- * For inseparable-prefix verbs (ver-, be-, er-, zer-, ent-) the "ge" trick
- * doesn't work, so we skip it and fall back to the global participle pool.
+ * Generate 3 wrong Perfekt options that visually resemble the correct answer.
+ * - Regular verbs: prefix "ge" to same-verb alternatives (e.g. gesprechen, gesprach)
+ * - Inseparable-prefix verbs (ver-, be-, er-, zer-, ent-): use same-verb
+ *   alternatives as-is since they already share the prefix (e.g. verspricht, versprach)
  */
 const INSEPARABLE_PREFIXES = ["ver", "be", "er", "zer", "ent"];
 
@@ -361,25 +361,28 @@ export function getPerfektOptions(infinitive: string, correctForm: string): stri
   const isInseparable = INSEPARABLE_PREFIXES.some(p => infinitive.startsWith(p));
   const forms = perfektAlternatives[infinitive] || [];
 
-  let wrong: string[] = [];
+  let candidates: string[];
 
-  if (!isInseparable) {
+  if (isInseparable) {
+    // Alternatives already share the verb prefix — use as-is
+    candidates = forms.filter(f => f.toLowerCase() !== correctLower);
+  } else {
     // Prefix "ge" to each alternative so distractors look like past participles
-    const geWrong = forms
+    candidates = forms
       .map(f => f.startsWith("ge") ? f : "ge" + f)
       .filter(f => f.toLowerCase() !== correctLower);
-
-    // Deduplicate (case-insensitive)
-    const seen = new Set<string>();
-    wrong = geWrong.filter(f => {
-      const lower = f.toLowerCase();
-      if (seen.has(lower)) return false;
-      seen.add(lower);
-      return true;
-    });
-
-    wrong = shuffle(wrong).slice(0, 3);
   }
+
+  // Deduplicate (case-insensitive)
+  const seen = new Set<string>();
+  const unique = candidates.filter(f => {
+    const lower = f.toLowerCase();
+    if (seen.has(lower)) return false;
+    seen.add(lower);
+    return true;
+  });
+
+  let wrong = shuffle(unique).slice(0, 3);
 
   // Fallback: fill from global pool of real past participles
   if (wrong.length < 3) {

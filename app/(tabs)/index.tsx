@@ -20,6 +20,7 @@ const adjectivesCard = require("../../assets/images/adjectives-card.webp") as Im
 const casesCard = require("../../assets/images/cases-card.webp") as ImageSourcePropType;
 const possessivesCard = require("../../assets/images/possessives-card.png") as ImageSourcePropType;
 const articlesCard = require("../../assets/images/articles-card.png") as ImageSourcePropType;
+const pronounsCard = require("../../assets/images/owl-mascot.png") as ImageSourcePropType;
 
 interface ModeCardProps {
   title: string;
@@ -72,6 +73,7 @@ export default function HomeScreen() {
     cases: { totalAttempted: 0, totalCorrect: 0 },
     possessives: { totalAttempted: 0, totalCorrect: 0 },
     articles: { totalAttempted: 0, totalCorrect: 0 },
+    pronouns: { totalAttempted: 0, totalCorrect: 0 },
     sessions: [],
   });
 
@@ -146,6 +148,15 @@ export default function HomeScreen() {
           accentColor={colors.articles}
           modeStats={stats.articles}
           onPress={() => router.push("/articles")}
+        />
+
+        <ModeCard
+          title="Personal Pronouns"
+          subtitle="Choose ich, mich, mir..."
+          image={pronounsCard}
+          accentColor={colors.pronouns}
+          modeStats={stats.pronouns}
+          onPress={() => router.push("/pronouns")}
         />
       </View>
 

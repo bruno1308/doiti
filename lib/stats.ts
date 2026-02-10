@@ -9,6 +9,7 @@ const defaultStats: AllStats = {
   cases: { totalAttempted: 0, totalCorrect: 0 },
   possessives: { totalAttempted: 0, totalCorrect: 0 },
   articles: { totalAttempted: 0, totalCorrect: 0 },
+  pronouns: { totalAttempted: 0, totalCorrect: 0 },
   sessions: [],
 };
 

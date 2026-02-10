@@ -31,7 +31,7 @@ export default function PerfektScreen() {
     () => generatePerfektExercise()
   );
   const [options, setOptions] = useState<string[]>(() =>
-    getPerfektOptions(exercise.pastParticiple)
+    getPerfektOptions(exercise.infinitive, exercise.pastParticiple)
   );
   const [selected, setSelected] = useState<string | null>(null);
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
@@ -90,7 +90,7 @@ export default function PerfektScreen() {
     correctRef.current = 0;
     const ex = generatePerfektExercise();
     setExercise(ex);
-    setOptions(getPerfektOptions(ex.pastParticiple));
+    setOptions(getPerfektOptions(ex.infinitive, ex.pastParticiple));
     setSelected(null);
     setIsCorrect(null);
     setShowCelebration(false);
@@ -158,7 +158,7 @@ export default function PerfektScreen() {
     }).start(() => {
       const ex = generatePerfektExercise();
       setExercise(ex);
-      setOptions(getPerfektOptions(ex.pastParticiple));
+      setOptions(getPerfektOptions(ex.infinitive, ex.pastParticiple));
       setSelected(null);
       setIsCorrect(null);
       setShowCelebration(false);

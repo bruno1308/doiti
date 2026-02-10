@@ -28,6 +28,8 @@ import type { PronounExerciseData } from "../data/pronoun-exercises";
 import pronounExercises from "../data/pronoun-exercises";
 import praeteritumExercises from "../data/praeteritum-exercises";
 import perfektExercises from "../data/perfekt-exercises";
+import praeteritumConjugations from "../data/praeteritum-conjugations";
+import perfektAlternatives from "../data/perfekt-alternatives";
 import type { PraeteritumExerciseData } from "../data/praeteritum-exercises";
 import type { PerfektExerciseData } from "../data/perfekt-exercises";
 
@@ -306,12 +308,23 @@ export function generatePraeteritumExercise(): PraeteritumExercise {
 }
 
 /**
- * Generate 3 wrong Prateritum options by picking other correctForm values from the pool.
+ * Generate 3 wrong Präteritum options using other conjugations of the SAME verb.
+ * Falls back to the global pool if not enough same-verb forms exist.
  */
-export function getPraeteritumOptions(correctForm: string): string[] {
-  const allForms = praeteritumExercises.map(e => e.correctForm);
-  const uniqueWrong = [...new Set(allForms.filter(f => f.toLowerCase() !== correctForm.toLowerCase()))];
-  const wrong = shuffle(uniqueWrong).slice(0, 3);
+export function getPraeteritumOptions(infinitive: string, correctForm: string): string[] {
+  const correctLower = correctForm.toLowerCase();
+  const forms = praeteritumConjugations[infinitive] || [];
+  let wrong = forms.filter(f => f.toLowerCase() !== correctLower);
+  wrong = shuffle(wrong).slice(0, 3);
+
+  // Fallback: fill from global pool if not enough same-verb distractors
+  if (wrong.length < 3) {
+    const allForms = praeteritumExercises.map(e => e.correctForm);
+    const usedLower = new Set([correctLower, ...wrong.map(w => w.toLowerCase())]);
+    const extra = shuffle(allForms.filter(f => !usedLower.has(f.toLowerCase())));
+    wrong = wrong.concat(extra.slice(0, 3 - wrong.length));
+  }
+
   return shuffle([correctForm, ...wrong]);
 }
 
@@ -336,11 +349,22 @@ export function generatePerfektExercise(): PerfektExercise {
 }
 
 /**
- * Generate 3 wrong Perfekt past participle options from the pool.
+ * Generate 3 wrong Perfekt options using other tense forms of the SAME verb
+ * (infinitive, Präteritum, Präsens). Falls back to the global pool if needed.
  */
-export function getPerfektOptions(correctForm: string): string[] {
-  const allForms = perfektExercises.map(e => e.pastParticiple);
-  const uniqueWrong = [...new Set(allForms.filter(f => f !== correctForm))];
-  const wrong = shuffle(uniqueWrong).slice(0, 3);
+export function getPerfektOptions(infinitive: string, correctForm: string): string[] {
+  const correctLower = correctForm.toLowerCase();
+  const forms = perfektAlternatives[infinitive] || [];
+  let wrong = forms.filter(f => f.toLowerCase() !== correctLower);
+  wrong = shuffle(wrong).slice(0, 3);
+
+  // Fallback: fill from global pool if not enough same-verb distractors
+  if (wrong.length < 3) {
+    const allForms = perfektExercises.map(e => e.pastParticiple);
+    const usedLower = new Set([correctLower, ...wrong.map(w => w.toLowerCase())]);
+    const extra = shuffle(allForms.filter(f => !usedLower.has(f.toLowerCase())));
+    wrong = wrong.concat(extra.slice(0, 3 - wrong.length));
+  }
+
   return shuffle([correctForm, ...wrong]);
 }

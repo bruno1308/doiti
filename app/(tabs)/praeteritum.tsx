@@ -31,7 +31,7 @@ export default function PraeteritumScreen() {
     () => generatePraeteritumExercise()
   );
   const [options, setOptions] = useState<string[]>(() =>
-    getPraeteritumOptions(exercise.correctForm)
+    getPraeteritumOptions(exercise.infinitive, exercise.correctForm)
   );
   const [selected, setSelected] = useState<string | null>(null);
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
@@ -90,7 +90,7 @@ export default function PraeteritumScreen() {
     correctRef.current = 0;
     const ex = generatePraeteritumExercise();
     setExercise(ex);
-    setOptions(getPraeteritumOptions(ex.correctForm));
+    setOptions(getPraeteritumOptions(ex.infinitive, ex.correctForm));
     setSelected(null);
     setIsCorrect(null);
     setShowCelebration(false);
@@ -158,7 +158,7 @@ export default function PraeteritumScreen() {
     }).start(() => {
       const ex = generatePraeteritumExercise();
       setExercise(ex);
-      setOptions(getPraeteritumOptions(ex.correctForm));
+      setOptions(getPraeteritumOptions(ex.infinitive, ex.correctForm));
       setSelected(null);
       setIsCorrect(null);
       setShowCelebration(false);

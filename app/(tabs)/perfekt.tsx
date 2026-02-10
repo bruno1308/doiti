@@ -21,7 +21,7 @@ import CelebrationOverlay, { CelebrationVariant } from "../../components/Celebra
 import ExerciseSetup from "../../components/ExerciseSetup";
 import ExerciseSummary from "../../components/ExerciseSummary";
 
-const exerciseImage = require("../../assets/images/articles-card.png") as ImageSourcePropType;
+const exerciseImage = require("../../assets/images/perfekt-card.png") as ImageSourcePropType;
 
 export default function PerfektScreen() {
   const router = useRouter();

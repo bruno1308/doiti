@@ -20,7 +20,9 @@ const adjectivesCard = require("../../assets/images/adjectives-card.webp") as Im
 const casesCard = require("../../assets/images/cases-card.webp") as ImageSourcePropType;
 const possessivesCard = require("../../assets/images/possessives-card.png") as ImageSourcePropType;
 const articlesCard = require("../../assets/images/articles-card.png") as ImageSourcePropType;
-const pronounsCard = require("../../assets/images/owl-mascot.png") as ImageSourcePropType;
+const pronounsCard = require("../../assets/images/pronouns-card.png") as ImageSourcePropType;
+const praeteritumCard = require("../../assets/images/praeteritum-card.png") as ImageSourcePropType;
+const perfektCard = require("../../assets/images/perfekt-card.png") as ImageSourcePropType;
 
 interface ModeCardProps {
   title: string;
@@ -164,7 +166,7 @@ export default function HomeScreen() {
         <ModeCard
           title="Präteritum"
           subtitle="Practice simple past tense verb forms"
-          image={articlesCard}
+          image={praeteritumCard}
           accentColor={colors.praeteritum}
           modeStats={stats.praeteritum}
           onPress={() => router.push("/praeteritum")}
@@ -173,7 +175,7 @@ export default function HomeScreen() {
         <ModeCard
           title="Perfekt"
           subtitle="Practice past participle forms"
-          image={articlesCard}
+          image={perfektCard}
           accentColor={colors.perfekt}
           modeStats={stats.perfekt}
           onPress={() => router.push("/perfekt")}

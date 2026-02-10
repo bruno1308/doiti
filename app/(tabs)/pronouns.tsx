@@ -24,7 +24,7 @@ import { personLabels } from "../../data/possessives";
 
 import type { GrammaticalCase } from "../../lib/types";
 
-const exerciseImage = require("../../assets/images/owl-mascot.png") as ImageSourcePropType;
+const exerciseImage = require("../../assets/images/pronouns-card.png") as ImageSourcePropType;
 
 const CASE_LABELS: Record<GrammaticalCase, string> = {
   nominativ: "Nominativ",

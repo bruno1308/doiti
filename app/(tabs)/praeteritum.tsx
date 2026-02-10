@@ -21,7 +21,7 @@ import CelebrationOverlay, { CelebrationVariant } from "../../components/Celebra
 import ExerciseSetup from "../../components/ExerciseSetup";
 import ExerciseSummary from "../../components/ExerciseSummary";
 
-const exerciseImage = require("../../assets/images/articles-card.png") as ImageSourcePropType;
+const exerciseImage = require("../../assets/images/praeteritum-card.png") as ImageSourcePropType;
 
 export default function PraeteritumScreen() {
   const router = useRouter();

@@ -12,6 +12,8 @@ const modeNames: Record<ExerciseMode, string> = {
   possessives: "Possessive Pronouns",
   articles: "Articles",
   pronouns: "Personal Pronouns",
+  praeteritum: "Präteritum",
+  perfekt: "Perfekt",
 };
 
 function formatDate(dateStr: string): string {

@@ -66,6 +66,18 @@ export default function TabLayout() {
           href: null,
         }}
       />
+      <Tabs.Screen
+        name="praeteritum"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="perfekt"
+        options={{
+          href: null,
+        }}
+      />
     </Tabs>
   );
 }

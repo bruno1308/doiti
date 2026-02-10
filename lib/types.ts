@@ -36,7 +36,27 @@ export interface CaseSentence {
   translation: string;
 }
 
-export type ExerciseMode = "gender" | "adjectives" | "cases" | "possessives" | "articles" | "pronouns";
+export type ExerciseMode = "gender" | "adjectives" | "cases" | "possessives" | "articles" | "pronouns" | "praeteritum" | "perfekt";
+
+export interface PraeteritumExercise {
+  id: number;
+  infinitive: string;
+  correctForm: string;
+  sentenceBefore: string;
+  sentenceAfter: string;
+  particle?: string;
+  translation: string;
+}
+
+export interface PerfektExercise {
+  id: number;
+  infinitive: string;
+  auxiliary: "haben" | "sein";
+  pastParticiple: string;
+  sentenceBefore: string;
+  sentenceAfter: string;
+  translation: string;
+}
 export type Person = "ich" | "du" | "er" | "sie_sg" | "es" | "wir" | "ihr" | "sie_pl" | "Sie";
 
 export interface PossessiveExercise {
@@ -96,5 +116,7 @@ export interface AllStats {
   possessives: ModeStats;
   articles: ModeStats;
   pronouns: ModeStats;
+  praeteritum: ModeStats;
+  perfekt: ModeStats;
   sessions: SessionStats[];
 }

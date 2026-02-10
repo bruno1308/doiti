@@ -60,6 +60,12 @@ export default function TabLayout() {
           href: null,
         }}
       />
+      <Tabs.Screen
+        name="pronouns"
+        options={{
+          href: null,
+        }}
+      />
     </Tabs>
   );
 }

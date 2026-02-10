@@ -16,6 +16,7 @@ export const colors = {
   neuter: "#22c55e",
   possessive: "#a855f7",
   articles: "#06b6d4",
+  pronouns: "#f43f5e",
 };
 
 export const spacing = {

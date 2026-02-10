@@ -11,14 +11,19 @@ import type {
   CaseSentence,
   PossessiveExercise,
   ArticleExercise,
+  PronounExercise,
   Gender,
   Person,
   ArticleType,
+  GrammaticalCase,
 } from "./types";
 import type { AdjectiveExerciseData } from "../data/adjective-exercises";
 import type { PossessiveExerciseData } from "../data/possessives-exercises";
 import type { ArticleExerciseData } from "../data/article-exercises";
 import type { CaseExerciseData } from "../data/case-exercises";
+import type { PronounExerciseData } from "../data/pronoun-exercises";
+
+import pronounExercises from "../data/pronoun-exercises";
 
 // Merge original + extra nouns for the gender quiz
 const allNouns: Noun[] = [...nouns, ...extraNouns.map(n => ({
@@ -200,4 +205,76 @@ export function getArticleOptions(articleType: ArticleType, correctForm: string)
   const pool = articleType === "definite" ? DEFINITE_FORMS : INDEFINITE_FORMS;
   const wrong = shuffle(pool.filter(f => f !== correctForm)).slice(0, 3);
   return shuffle([correctForm, ...wrong]);
+}
+
+// --- Personal Pronouns (pre-baked) ---
+
+let pronounExerciseId = 0;
+
+export function generatePronounExercise(): PronounExercise {
+  const data = pronounExercises[Math.floor(Math.random() * pronounExercises.length)];
+
+  pronounExerciseId += 1;
+
+  return {
+    id: pronounExerciseId,
+    person: data.person,
+    case: data.case,
+    correctForm: data.correctForm,
+    sentenceBefore: data.sentenceBefore,
+    sentenceAfter: data.sentenceAfter,
+    translation: data.translation,
+  };
+}
+
+const PRONOUN_FORMS: Record<Person, Record<string, string>> = {
+  ich: { nominativ: "ich", akkusativ: "mich", dativ: "mir" },
+  du: { nominativ: "du", akkusativ: "dich", dativ: "dir" },
+  er: { nominativ: "er", akkusativ: "ihn", dativ: "ihm" },
+  sie_sg: { nominativ: "sie", akkusativ: "sie", dativ: "ihr" },
+  es: { nominativ: "es", akkusativ: "es", dativ: "ihm" },
+  wir: { nominativ: "wir", akkusativ: "uns", dativ: "uns" },
+  ihr: { nominativ: "ihr", akkusativ: "euch", dativ: "euch" },
+  sie_pl: { nominativ: "sie", akkusativ: "sie", dativ: "ihnen" },
+  Sie: { nominativ: "Sie", akkusativ: "Sie", dativ: "Ihnen" },
+};
+
+const ALL_PRONOUN_FORMS_BY_CASE: Record<string, string[]> = {
+  nominativ: ["ich", "du", "er", "sie", "es", "wir", "ihr", "Sie"],
+  akkusativ: ["mich", "dich", "ihn", "sie", "es", "uns", "euch", "Sie"],
+  dativ: ["mir", "dir", "ihm", "ihr", "uns", "euch", "ihnen", "Ihnen"],
+};
+
+export function getPronounOptions(person: Person, grammaticalCase: GrammaticalCase, correctForm: string): string[] {
+  const correctLower = correctForm.toLowerCase();
+  const cases = ["nominativ", "akkusativ", "dativ"];
+
+  // Get other case forms of the same person as distractors
+  const personForms = PRONOUN_FORMS[person];
+  const uniqueOtherPersonForms: string[] = [];
+  for (const c of cases) {
+    const form = personForms[c];
+    if (form.toLowerCase() !== correctLower && uniqueOtherPersonForms.indexOf(form) === -1) {
+      uniqueOtherPersonForms.push(form);
+    }
+  }
+
+  // Get forms from other persons in the same case as additional distractors
+  const sameCaseForms = ALL_PRONOUN_FORMS_BY_CASE[grammaticalCase] || [];
+  const otherSameCaseForms = sameCaseForms.filter(f => f.toLowerCase() !== correctLower);
+
+  // Build wrong answers: prefer same-person other-case forms, then fill with same-case other-person
+  let wrong = uniqueOtherPersonForms.slice();
+  if (wrong.length < 3) {
+    const additional = shuffle(otherSameCaseForms.filter(f => {
+      for (const w of wrong) {
+        if (w.toLowerCase() === f.toLowerCase()) return false;
+      }
+      return true;
+    }));
+    wrong = wrong.concat(additional);
+  }
+  wrong = shuffle(wrong).slice(0, 3);
+
+  return shuffle([correctForm].concat(wrong));
 }

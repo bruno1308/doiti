@@ -350,15 +350,38 @@ export function generatePerfektExercise(): PerfektExercise {
 
 /**
  * Generate 3 wrong Perfekt options using other tense forms of the SAME verb
- * (infinitive, Präteritum, Präsens). Falls back to the global pool if needed.
+ * with "ge" prefixed so they visually resemble real past participles.
+ * For inseparable-prefix verbs (ver-, be-, er-, zer-, ent-) the "ge" trick
+ * doesn't work, so we skip it and fall back to the global participle pool.
  */
+const INSEPARABLE_PREFIXES = ["ver", "be", "er", "zer", "ent"];
+
 export function getPerfektOptions(infinitive: string, correctForm: string): string[] {
   const correctLower = correctForm.toLowerCase();
+  const isInseparable = INSEPARABLE_PREFIXES.some(p => infinitive.startsWith(p));
   const forms = perfektAlternatives[infinitive] || [];
-  let wrong = forms.filter(f => f.toLowerCase() !== correctLower);
-  wrong = shuffle(wrong).slice(0, 3);
 
-  // Fallback: fill from global pool if not enough same-verb distractors
+  let wrong: string[] = [];
+
+  if (!isInseparable) {
+    // Prefix "ge" to each alternative so distractors look like past participles
+    const geWrong = forms
+      .map(f => f.startsWith("ge") ? f : "ge" + f)
+      .filter(f => f.toLowerCase() !== correctLower);
+
+    // Deduplicate (case-insensitive)
+    const seen = new Set<string>();
+    wrong = geWrong.filter(f => {
+      const lower = f.toLowerCase();
+      if (seen.has(lower)) return false;
+      seen.add(lower);
+      return true;
+    });
+
+    wrong = shuffle(wrong).slice(0, 3);
+  }
+
+  // Fallback: fill from global pool of real past participles
   if (wrong.length < 3) {
     const allForms = perfektExercises.map(e => e.pastParticiple);
     const usedLower = new Set([correctLower, ...wrong.map(w => w.toLowerCase())]);

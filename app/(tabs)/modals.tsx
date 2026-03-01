@@ -241,15 +241,6 @@ export default function ModalsScreen() {
           </Text>
         </View>
 
-        {/* Verb badge */}
-        <View style={styles.badgeRow}>
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>
-              {exercise.modalVerb} ({exercise.person})
-            </Text>
-          </View>
-        </View>
-
         {/* Sentence display */}
         <View style={styles.sentenceCard}>
           <Text style={styles.sentenceText}>
@@ -337,22 +328,6 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     fontSize: 16,
     fontWeight: "600",
-  },
-  badgeRow: {
-    flexDirection: "row",
-    gap: spacing.sm,
-    marginBottom: spacing.lg,
-  },
-  badge: {
-    backgroundColor: colors.surfaceLight,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    borderRadius: 12,
-  },
-  badgeText: {
-    color: colors.textSecondary,
-    fontSize: 13,
-    fontWeight: "500",
   },
   sentenceCard: {
     backgroundColor: colors.surface,

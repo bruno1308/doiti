@@ -23,6 +23,9 @@ const articlesCard = require("../../assets/images/articles-card.png") as ImageSo
 const pronounsCard = require("../../assets/images/pronouns-card.png") as ImageSourcePropType;
 const praeteritumCard = require("../../assets/images/praeteritum-card.png") as ImageSourcePropType;
 const perfektCard = require("../../assets/images/perfekt-card.png") as ImageSourcePropType;
+const pluralsCard = require("../../assets/images/plurals-card.png") as ImageSourcePropType;
+const prepositionsCard = require("../../assets/images/prepositions-card.png") as ImageSourcePropType;
+const modalsCard = require("../../assets/images/modals-card.png") as ImageSourcePropType;
 
 interface ModeCardProps {
   title: string;
@@ -187,7 +190,7 @@ export default function HomeScreen() {
         <ModeCard
           title="Plurals"
           subtitle="Practice German noun plural forms"
-          image={owlMascot}
+          image={pluralsCard}
           accentColor={colors.plurals}
           modeStats={stats.plurals}
           onPress={() => router.push("/plurals")}
@@ -196,7 +199,7 @@ export default function HomeScreen() {
         <ModeCard
           title="Prepositions"
           subtitle="Practice prepositions and their cases"
-          image={owlMascot}
+          image={prepositionsCard}
           accentColor={colors.prepositions}
           modeStats={stats.prepositions}
           onPress={() => router.push("/prepositions")}
@@ -205,7 +208,7 @@ export default function HomeScreen() {
         <ModeCard
           title="Modal Verbs"
           subtitle="Practice können, müssen, dürfen..."
-          image={owlMascot}
+          image={modalsCard}
           accentColor={colors.modals}
           modeStats={stats.modals}
           onPress={() => router.push("/modals")}

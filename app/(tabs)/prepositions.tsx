@@ -22,7 +22,7 @@ import CelebrationOverlay, { CelebrationVariant } from "../../components/Celebra
 import ExerciseSetup from "../../components/ExerciseSetup";
 import ExerciseSummary from "../../components/ExerciseSummary";
 
-const exerciseImage = require("../../assets/images/owl-mascot.png") as ImageSourcePropType;
+const exerciseImage = require("../../assets/images/prepositions-card.png") as ImageSourcePropType;
 
 const CASE_LABELS: Record<string, string> = {
   akkusativ: "Akkusativ",

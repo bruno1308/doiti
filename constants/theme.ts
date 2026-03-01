@@ -19,6 +19,9 @@ export const colors = {
   pronouns: "#f43f5e",
   praeteritum: "#f97316",
   perfekt: "#14b8a6",
+  plurals: "#8b5cf6",
+  prepositions: "#0ea5e9",
+  modals: "#d946ef",
 };
 
 export const spacing = {

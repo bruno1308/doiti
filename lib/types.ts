@@ -36,7 +36,7 @@ export interface CaseSentence {
   translation: string;
 }
 
-export type ExerciseMode = "gender" | "adjectives" | "cases" | "possessives" | "articles" | "pronouns" | "praeteritum" | "perfekt";
+export type ExerciseMode = "gender" | "adjectives" | "cases" | "possessives" | "articles" | "pronouns" | "praeteritum" | "perfekt" | "plurals" | "prepositions" | "modals";
 
 export interface PraeteritumExercise {
   id: number;
@@ -118,6 +118,9 @@ export interface AllStats {
   pronouns: ModeStats;
   praeteritum: ModeStats;
   perfekt: ModeStats;
+  plurals: ModeStats;
+  prepositions: ModeStats;
+  modals: ModeStats;
   sessions: SessionStats[];
 }
 

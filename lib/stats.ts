@@ -12,6 +12,9 @@ const defaultStats: AllStats = {
   pronouns: { totalAttempted: 0, totalCorrect: 0 },
   praeteritum: { totalAttempted: 0, totalCorrect: 0 },
   perfekt: { totalAttempted: 0, totalCorrect: 0 },
+  plurals: { totalAttempted: 0, totalCorrect: 0 },
+  prepositions: { totalAttempted: 0, totalCorrect: 0 },
+  modals: { totalAttempted: 0, totalCorrect: 0 },
   sessions: [],
 };
 

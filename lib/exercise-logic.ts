@@ -29,6 +29,11 @@ import praeteritumConjugations from "../data/praeteritum-conjugations";
 import perfektAlternatives from "../data/perfekt-alternatives";
 import type { PraeteritumExerciseData } from "../data/praeteritum-exercises";
 import type { PerfektExerciseData } from "../data/perfekt-exercises";
+import prepositionExercises from "../data/preposition-exercises";
+import type { PrepositionExerciseData } from "../data/preposition-exercises";
+import modalExercises from "../data/modal-exercises";
+import type { ModalExerciseData, ModalVerb, ModalPerson } from "../data/modal-exercises";
+import modalConjugations from "../data/modal-conjugations";
 
 // Merge original + extra nouns for the gender quiz
 const allNouns: Noun[] = [...nouns, ...extraNouns.map(n => ({
@@ -99,6 +104,14 @@ export function getAllPraeteritumExercises(): PraeteritumExerciseData[] {
 
 export function getAllPerfektExercises(): PerfektExerciseData[] {
   return perfektExercises;
+}
+
+export function getAllPrepositionExercises(): PrepositionExerciseData[] {
+  return prepositionExercises;
+}
+
+export function getAllModalExercises(): ModalExerciseData[] {
+  return modalExercises;
 }
 
 // --- Multiple Choice Option Generators ---
@@ -262,6 +275,65 @@ export function getPerfektOptions(infinitive: string, correctForm: string): stri
     const usedLower = new Set([correctLower, ...wrong.map(w => w.toLowerCase())]);
     const extra = shuffle(allForms.filter(f => !usedLower.has(f.toLowerCase())));
     wrong = wrong.concat(extra.slice(0, 3 - wrong.length));
+  }
+
+  return shuffle([correctForm, ...wrong]);
+}
+
+/**
+ * Generate 3 wrong plural options from other nouns in the pool.
+ */
+export function getPluralOptions(correctPlural: string): string[] {
+  const correctLower = correctPlural.toLowerCase();
+  const allPlurals = allNouns.map(n => n.plural).filter(p => p && p.toLowerCase() !== correctLower);
+  const unique = [...new Set(allPlurals)];
+  const wrong = shuffle(unique).slice(0, 3);
+  return shuffle([correctPlural, ...wrong]);
+}
+
+/**
+ * All prepositions grouped by case for distractor selection.
+ */
+const ALL_PREPOSITIONS: Record<string, string[]> = {
+  akkusativ: ["bis", "durch", "für", "gegen", "ohne", "um"],
+  dativ: ["aus", "bei", "gegenüber", "mit", "nach", "seit", "von", "zu"],
+  genitiv: ["trotz", "wegen", "während", "statt"],
+  wechsel: ["an", "auf", "hinter", "in", "neben", "über", "unter", "vor", "zwischen"],
+};
+const FLAT_PREPOSITIONS = Object.values(ALL_PREPOSITIONS).flat();
+
+/**
+ * Generate 3 wrong preposition options, preferring prepositions from different case groups.
+ */
+export function getPrepositionOptions(correctPreposition: string): string[] {
+  const correctLower = correctPreposition.toLowerCase();
+  const wrong = shuffle(FLAT_PREPOSITIONS.filter(p => p.toLowerCase() !== correctLower)).slice(0, 3);
+  return shuffle([correctPreposition, ...wrong]);
+}
+
+/**
+ * Generate 3 wrong modal verb options using the same person conjugation
+ * of OTHER commonly confused modal verbs (können/müssen/dürfen/sollen/wollen/mögen).
+ */
+export function getModalOptions(modalVerb: ModalVerb, person: ModalPerson, correctForm: string): string[] {
+  const correctLower = correctForm.toLowerCase();
+  const allVerbs: ModalVerb[] = ["können", "müssen", "dürfen", "sollen", "wollen", "mögen"];
+  const otherVerbs = allVerbs.filter(v => v !== modalVerb);
+
+  // Get same-person conjugation of other modal verbs
+  const candidates = otherVerbs
+    .map(v => modalConjugations[v][person])
+    .filter(f => f.toLowerCase() !== correctLower);
+
+  // Deduplicate
+  const unique = [...new Set(candidates)];
+  let wrong = shuffle(unique).slice(0, 3);
+
+  // Fallback: fill from other person forms of same verb
+  if (wrong.length < 3) {
+    const sameForms = Object.values(modalConjugations[modalVerb])
+      .filter(f => f.toLowerCase() !== correctLower && !wrong.some(w => w.toLowerCase() === f.toLowerCase()));
+    wrong = wrong.concat(shuffle([...new Set(sameForms)]).slice(0, 3 - wrong.length));
   }
 
   return shuffle([correctForm, ...wrong]);

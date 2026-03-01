@@ -78,6 +78,24 @@ export default function TabLayout() {
           href: null,
         }}
       />
+      <Tabs.Screen
+        name="plurals"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="prepositions"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="modals"
+        options={{
+          href: null,
+        }}
+      />
     </Tabs>
   );
 }

@@ -78,6 +78,9 @@ export default function HomeScreen() {
     pronouns: { totalAttempted: 0, totalCorrect: 0 },
     praeteritum: { totalAttempted: 0, totalCorrect: 0 },
     perfekt: { totalAttempted: 0, totalCorrect: 0 },
+    plurals: { totalAttempted: 0, totalCorrect: 0 },
+    prepositions: { totalAttempted: 0, totalCorrect: 0 },
+    modals: { totalAttempted: 0, totalCorrect: 0 },
     sessions: [],
   });
 
@@ -179,6 +182,33 @@ export default function HomeScreen() {
           accentColor={colors.perfekt}
           modeStats={stats.perfekt}
           onPress={() => router.push("/perfekt")}
+        />
+
+        <ModeCard
+          title="Plurals"
+          subtitle="Practice German noun plural forms"
+          image={owlMascot}
+          accentColor={colors.plurals}
+          modeStats={stats.plurals}
+          onPress={() => router.push("/plurals")}
+        />
+
+        <ModeCard
+          title="Prepositions"
+          subtitle="Practice prepositions and their cases"
+          image={owlMascot}
+          accentColor={colors.prepositions}
+          modeStats={stats.prepositions}
+          onPress={() => router.push("/prepositions")}
+        />
+
+        <ModeCard
+          title="Modal Verbs"
+          subtitle="Practice können, müssen, dürfen..."
+          image={owlMascot}
+          accentColor={colors.modals}
+          modeStats={stats.modals}
+          onPress={() => router.push("/modals")}
         />
       </View>
 

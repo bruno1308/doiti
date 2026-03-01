@@ -32,7 +32,7 @@ export default function PluralsScreen() {
     () => getAllNouns()[0]
   );
   const [options, setOptions] = useState<string[]>(() =>
-    getPluralOptions(exercise.plural)
+    getPluralOptions(exercise.word, exercise.plural)
   );
   const [selected, setSelected] = useState<string | null>(null);
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
@@ -98,7 +98,7 @@ export default function PluralsScreen() {
     questionIdsRef.current = questionIds;
     exerciseIndexRef.current = 0;
     setExercise(exercises[0]);
-    setOptions(getPluralOptions(exercises[0].plural));
+    setOptions(getPluralOptions(exercises[0].word, exercises[0].plural));
     setSelected(null);
     setIsCorrect(null);
     setShowCelebration(false);
@@ -169,7 +169,7 @@ export default function PluralsScreen() {
       exerciseIndexRef.current = nextIndex;
       const ex = exercisesRef.current[nextIndex];
       setExercise(ex);
-      setOptions(getPluralOptions(ex.plural));
+      setOptions(getPluralOptions(ex.word, ex.plural));
       setSelected(null);
       setIsCorrect(null);
       setShowCelebration(false);

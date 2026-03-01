@@ -281,13 +281,67 @@ export function getPerfektOptions(infinitive: string, correctForm: string): stri
 }
 
 /**
- * Generate 3 wrong plural options from other nouns in the pool.
+ * Replace the last umlautifiable vowel (a→ä, o→ö, u→ü, au→äu).
  */
-export function getPluralOptions(correctPlural: string): string[] {
+function applyUmlaut(word: string): string | null {
+  for (let i = word.length - 1; i >= 0; i--) {
+    const ch = word[i];
+    if (ch === "u" && i > 0 && word[i - 1].toLowerCase() === "a") {
+      const isUpper = word[i - 1] === "A";
+      return word.slice(0, i - 1) + (isUpper ? "Ä" : "ä") + "u" + word.slice(i + 1);
+    }
+    if (ch === "a") return word.slice(0, i) + "ä" + word.slice(i + 1);
+    if (ch === "A") return word.slice(0, i) + "Ä" + word.slice(i + 1);
+    if (ch === "o") return word.slice(0, i) + "ö" + word.slice(i + 1);
+    if (ch === "O") return word.slice(0, i) + "Ö" + word.slice(i + 1);
+    if (ch === "u") return word.slice(0, i) + "ü" + word.slice(i + 1);
+    if (ch === "U") return word.slice(0, i) + "Ü" + word.slice(i + 1);
+  }
+  return null;
+}
+
+/**
+ * Generate 3 wrong plural options by applying different endings to the same word.
+ * e.g. Stunde → Stundes, Stunde, Stundeln (correct: Stunden)
+ */
+export function getPluralOptions(singular: string, correctPlural: string): string[] {
   const correctLower = correctPlural.toLowerCase();
-  const allPlurals = allNouns.map(n => n.plural).filter(p => p && p.toLowerCase() !== correctLower);
-  const unique = [...new Set(allPlurals)];
-  const wrong = shuffle(unique).slice(0, 3);
+  const candidates = new Set<string>();
+
+  // Add common plural suffixes to the full singular
+  for (const suffix of ["e", "en", "er", "n", "s", "se"]) {
+    candidates.add(singular + suffix);
+  }
+  // No-change plural
+  candidates.add(singular);
+
+  // If word ends in -e, replace -e with other endings
+  if (singular.endsWith("e")) {
+    const stem = singular.slice(0, -1);
+    for (const ending of ["en", "er", "eln", "el", "es"]) {
+      candidates.add(stem + ending);
+    }
+  }
+
+  // If word ends in -er/-el/-en, try swapping the suffix
+  if (/e[rln]$/.test(singular)) {
+    const stem = singular.slice(0, -2);
+    for (const ending of ["ern", "eln", "en", "el", "er"]) {
+      candidates.add(stem + ending);
+    }
+  }
+
+  // Umlaut variations (Haus→Häuser, Mutter→Mütter)
+  const umlauted = applyUmlaut(singular);
+  if (umlauted) {
+    candidates.add(umlauted);
+    candidates.add(umlauted + "e");
+    candidates.add(umlauted + "er");
+  }
+
+  // Remove the correct answer
+  const filtered = [...candidates].filter(c => c.toLowerCase() !== correctLower);
+  const wrong = shuffle(filtered).slice(0, 3);
   return shuffle([correctPlural, ...wrong]);
 }
 

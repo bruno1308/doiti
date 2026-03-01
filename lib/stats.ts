@@ -1,5 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { AllStats, ExerciseMode, ModeStats, SessionStats } from "./types";
+import { AllStats, ExerciseMode, ModeStats, QuestionStatsMap, SessionStats } from "./types";
 
 const STATS_KEY = "doiti_stats";
 
@@ -45,11 +45,37 @@ export async function recordSession(session: SessionStats): Promise<void> {
   await AsyncStorage.setItem(STATS_KEY, JSON.stringify(stats));
 }
 
+const QUESTION_STATS_KEY = "doiti_question_stats";
+
 export async function resetStats(): Promise<void> {
   await AsyncStorage.setItem(STATS_KEY, JSON.stringify(defaultStats));
+  await AsyncStorage.removeItem(QUESTION_STATS_KEY);
 }
 
 export function getAccuracy(mode: ModeStats): number {
   if (mode.totalAttempted === 0) return 0;
   return Math.round((mode.totalCorrect / mode.totalAttempted) * 100);
+}
+
+export async function getQuestionStats(): Promise<QuestionStatsMap> {
+  const raw = await AsyncStorage.getItem(QUESTION_STATS_KEY);
+  if (!raw) return {};
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return {};
+  }
+}
+
+export async function recordQuestionAnswer(
+  questionId: string,
+  correct: boolean
+): Promise<void> {
+  const stats = await getQuestionStats();
+  const existing = stats[questionId] || { attempts: 0, correct: 0, lastSeen: "" };
+  existing.attempts += 1;
+  if (correct) existing.correct += 1;
+  existing.lastSeen = new Date().toISOString();
+  stats[questionId] = existing;
+  await AsyncStorage.setItem(QUESTION_STATS_KEY, JSON.stringify(stats));
 }

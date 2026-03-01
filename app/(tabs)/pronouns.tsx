@@ -13,9 +13,10 @@ import {
 const useNativeDriver = Platform.OS !== "web";
 import { useFocusEffect } from "@react-navigation/native";
 import { useRouter } from "expo-router";
-import { generatePronounExercise, getPronounOptions } from "../../lib/exercise-logic";
-import { recordAnswer, recordSession } from "../../lib/stats";
-import { PronounExercise, ExercisePhase } from "../../lib/types";
+import { selectExercises, getAllPronounExercises, getPronounOptions } from "../../lib/exercise-logic";
+import { recordAnswer, recordSession, recordQuestionAnswer } from "../../lib/stats";
+import { ExercisePhase } from "../../lib/types";
+import type { PronounExerciseData } from "../../data/pronoun-exercises";
 import { colors, spacing } from "../../constants/theme";
 import CelebrationOverlay, { CelebrationVariant } from "../../components/CelebrationOverlay";
 import ExerciseSetup from "../../components/ExerciseSetup";
@@ -37,8 +38,8 @@ export default function PronounsScreen() {
   const router = useRouter();
   const [phase, setPhase] = useState<ExercisePhase>("setup");
   const [targetCount, setTargetCount] = useState(10);
-  const [exercise, setExercise] = useState<PronounExercise>(
-    () => generatePronounExercise()
+  const [exercise, setExercise] = useState<PronounExerciseData>(
+    () => getAllPronounExercises()[0]
   );
   const [options, setOptions] = useState<string[]>(() =>
     getPronounOptions(exercise.person, exercise.case, exercise.correctForm)
@@ -54,6 +55,10 @@ export default function PronounsScreen() {
   const totalRef = useRef(0);
   const correctRef = useRef(0);
   const comboRef = useRef(0);
+
+  const exercisesRef = useRef<PronounExerciseData[]>([]);
+  const questionIdsRef = useRef<string[]>([]);
+  const exerciseIndexRef = useRef(0);
 
   useFocusEffect(
     useCallback(() => {
@@ -92,15 +97,18 @@ export default function PronounsScreen() {
     });
   }, [shakeAnim]);
 
-  const handleStart = useCallback((count: number) => {
+  const handleStart = useCallback(async (count: number) => {
     setTargetCount(count);
     setTotal(0);
     setCorrect(0);
     totalRef.current = 0;
     correctRef.current = 0;
-    const ex = generatePronounExercise();
-    setExercise(ex);
-    setOptions(getPronounOptions(ex.person, ex.case, ex.correctForm));
+    const { exercises, questionIds } = await selectExercises("pronouns", getAllPronounExercises(), count);
+    exercisesRef.current = exercises;
+    questionIdsRef.current = questionIds;
+    exerciseIndexRef.current = 0;
+    setExercise(exercises[0]);
+    setOptions(getPronounOptions(exercises[0].person, exercises[0].case, exercises[0].correctForm));
     setSelected(null);
     setIsCorrect(null);
     setShowCelebration(false);
@@ -142,6 +150,7 @@ export default function PronounsScreen() {
       triggerShake();
     }
     recordAnswer("pronouns", result);
+    recordQuestionAnswer(questionIdsRef.current[exerciseIndexRef.current], result);
   }, [selected, exercise.correctForm, triggerShake]);
 
   const handleNext = useCallback(() => {
@@ -166,7 +175,9 @@ export default function PronounsScreen() {
       duration: 150,
       useNativeDriver,
     }).start(() => {
-      const ex = generatePronounExercise();
+      const nextIndex = exerciseIndexRef.current + 1;
+      exerciseIndexRef.current = nextIndex;
+      const ex = exercisesRef.current[nextIndex];
       setExercise(ex);
       setOptions(getPronounOptions(ex.person, ex.case, ex.correctForm));
       setSelected(null);

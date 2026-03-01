@@ -13,9 +13,10 @@ import {
 const useNativeDriver = Platform.OS !== "web";
 import { useFocusEffect } from "@react-navigation/native";
 import { useRouter } from "expo-router";
-import { generateArticleExercise, getArticleOptions } from "../../lib/exercise-logic";
-import { recordAnswer, recordSession } from "../../lib/stats";
-import { ArticleExercise, ExercisePhase } from "../../lib/types";
+import { selectExercises, getAllArticleExercises, getArticleOptions } from "../../lib/exercise-logic";
+import { recordAnswer, recordSession, recordQuestionAnswer } from "../../lib/stats";
+import { ExercisePhase } from "../../lib/types";
+import type { ArticleExerciseData } from "../../data/article-exercises";
 import { colors, spacing } from "../../constants/theme";
 import CelebrationOverlay, { CelebrationVariant } from "../../components/CelebrationOverlay";
 import ExerciseSetup from "../../components/ExerciseSetup";
@@ -47,8 +48,8 @@ export default function ArticlesScreen() {
   const router = useRouter();
   const [phase, setPhase] = useState<ExercisePhase>("setup");
   const [targetCount, setTargetCount] = useState(10);
-  const [exercise, setExercise] = useState<ArticleExercise>(
-    () => generateArticleExercise()
+  const [exercise, setExercise] = useState<ArticleExerciseData>(
+    () => getAllArticleExercises()[0]
   );
   const [options, setOptions] = useState<string[]>(() =>
     getArticleOptions(exercise.articleType, exercise.correctForm)
@@ -64,6 +65,10 @@ export default function ArticlesScreen() {
   const totalRef = useRef(0);
   const correctRef = useRef(0);
   const comboRef = useRef(0);
+
+  const exercisesRef = useRef<ArticleExerciseData[]>([]);
+  const questionIdsRef = useRef<string[]>([]);
+  const exerciseIndexRef = useRef(0);
 
   useFocusEffect(
     useCallback(() => {
@@ -102,15 +107,18 @@ export default function ArticlesScreen() {
     });
   }, [shakeAnim]);
 
-  const handleStart = useCallback((count: number) => {
+  const handleStart = useCallback(async (count: number) => {
     setTargetCount(count);
     setTotal(0);
     setCorrect(0);
     totalRef.current = 0;
     correctRef.current = 0;
-    const ex = generateArticleExercise();
-    setExercise(ex);
-    setOptions(getArticleOptions(ex.articleType, ex.correctForm));
+    const { exercises, questionIds } = await selectExercises("articles", getAllArticleExercises(), count);
+    exercisesRef.current = exercises;
+    questionIdsRef.current = questionIds;
+    exerciseIndexRef.current = 0;
+    setExercise(exercises[0]);
+    setOptions(getArticleOptions(exercises[0].articleType, exercises[0].correctForm));
     setSelected(null);
     setIsCorrect(null);
     setShowCelebration(false);
@@ -152,6 +160,7 @@ export default function ArticlesScreen() {
       triggerShake();
     }
     recordAnswer("articles", result);
+    recordQuestionAnswer(questionIdsRef.current[exerciseIndexRef.current], result);
   }, [selected, exercise.correctForm, triggerShake]);
 
   const handleNext = useCallback(() => {
@@ -176,7 +185,9 @@ export default function ArticlesScreen() {
       duration: 150,
       useNativeDriver,
     }).start(() => {
-      const ex = generateArticleExercise();
+      const nextIndex = exerciseIndexRef.current + 1;
+      exerciseIndexRef.current = nextIndex;
+      const ex = exercisesRef.current[nextIndex];
       setExercise(ex);
       setOptions(getArticleOptions(ex.articleType, ex.correctForm));
       setSelected(null);

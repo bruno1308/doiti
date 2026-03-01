@@ -5,19 +5,16 @@ import caseExercises from "../data/case-exercises";
 import possessiveExercises from "../data/possessives-exercises";
 import articleExercises from "../data/article-exercises";
 import adjectiveExercises from "../data/adjective-exercises";
+import { getQuestionStats } from "./stats";
 import type {
   Noun,
-  AdjectiveTemplate,
   CaseSentence,
-  PossessiveExercise,
-  ArticleExercise,
-  PronounExercise,
-  PraeteritumExercise,
-  PerfektExercise,
   Gender,
   Person,
   ArticleType,
   GrammaticalCase,
+  QuestionStatsMap,
+  ExerciseMode,
 } from "./types";
 import type { AdjectiveExerciseData } from "../data/adjective-exercises";
 import type { PossessiveExerciseData } from "../data/possessives-exercises";
@@ -54,54 +51,12 @@ export function shuffle<T>(array: T[]): T[] {
 }
 
 /**
- * Pick a single random noun from the full noun list (original + extra).
- */
-export function getRandomNoun(): Noun {
-  const index = Math.floor(Math.random() * allNouns.length);
-  return allNouns[index];
-}
-
-/**
- * Return `count` randomly-selected nouns (no duplicates when count <= allNouns.length).
- */
-export function getRandomNouns(count: number): Noun[] {
-  return shuffle(allNouns).slice(0, count);
-}
-
-/**
  * Map a gender code to its nominative definite article.
  */
 export function getArticleForGender(gender: "m" | "f" | "n"): string {
   const map: Record<Gender, string> = { m: "der", f: "die", n: "das" };
   return map[gender];
 }
-
-// --- Adjective Endings (pre-baked) ---
-
-let adjectiveExerciseId = 0;
-
-export function generateAdjectiveExercise(): AdjectiveTemplate {
-  const data = adjectiveExercises[Math.floor(Math.random() * adjectiveExercises.length)];
-
-  adjectiveExerciseId += 1;
-
-  return {
-    id: adjectiveExerciseId,
-    articleType: data.articleType,
-    case: data.case,
-    gender: data.gender,
-    article: data.article,
-    noun: data.noun,
-    nounTranslation: data.nounTranslation,
-    adjective: data.adjective,
-    adjectiveTranslation: data.adjectiveTranslation,
-    correctEnding: data.correctEnding,
-    sentenceBefore: data.sentenceBefore,
-    sentenceAfter: data.sentenceAfter,
-  };
-}
-
-// --- Case Identification (pre-baked) ---
 
 // Merge old + new case sentences
 const allCaseSentences: CaseSentence[] = [
@@ -114,59 +69,36 @@ const allCaseSentences: CaseSentence[] = [
   })),
 ];
 
-export function getRandomCaseSentence(): CaseSentence {
-  const index = Math.floor(Math.random() * allCaseSentences.length);
-  return allCaseSentences[index];
+export function getAllNouns(): Noun[] {
+  return allNouns;
 }
 
-export function getShuffledCaseSentences(): CaseSentence[] {
-  return shuffle(allCaseSentences);
+export function getAllAdjectiveExercises(): AdjectiveExerciseData[] {
+  return adjectiveExercises;
 }
 
-// --- Possessive Pronouns (pre-baked) ---
-
-let possessiveExerciseId = 0;
-
-export function generatePossessiveExercise(): PossessiveExercise {
-  const data = possessiveExercises[Math.floor(Math.random() * possessiveExercises.length)];
-
-  possessiveExerciseId += 1;
-
-  return {
-    id: possessiveExerciseId,
-    person: data.person,
-    case: data.case,
-    gender: data.gender,
-    noun: data.noun,
-    nounTranslation: data.nounTranslation,
-    correctForm: data.correctForm,
-    sentenceBefore: data.sentenceBefore,
-    sentenceAfter: data.sentenceAfter,
-    translation: data.translation,
-  };
+export function getAllCaseSentences(): CaseSentence[] {
+  return allCaseSentences;
 }
 
-// --- Article Drills (pre-baked) ---
+export function getAllArticleExercises(): ArticleExerciseData[] {
+  return articleExercises;
+}
 
-let articleExerciseId = 0;
+export function getAllPossessiveExercises(): PossessiveExerciseData[] {
+  return possessiveExercises;
+}
 
-export function generateArticleExercise(): ArticleExercise {
-  const data = articleExercises[Math.floor(Math.random() * articleExercises.length)];
+export function getAllPronounExercises(): PronounExerciseData[] {
+  return pronounExercises;
+}
 
-  articleExerciseId += 1;
+export function getAllPraeteritumExercises(): PraeteritumExerciseData[] {
+  return praeteritumExercises;
+}
 
-  return {
-    id: articleExerciseId,
-    articleType: data.articleType,
-    case: data.case,
-    gender: data.gender,
-    noun: data.noun,
-    nounTranslation: data.nounTranslation,
-    correctForm: data.correctForm,
-    sentenceBefore: data.sentenceBefore,
-    sentenceAfter: data.sentenceAfter,
-    translation: data.translation,
-  };
+export function getAllPerfektExercises(): PerfektExerciseData[] {
+  return perfektExercises;
 }
 
 // --- Multiple Choice Option Generators ---
@@ -213,26 +145,6 @@ export function getArticleOptions(articleType: ArticleType, correctForm: string)
   const pool = articleType === "definite" ? DEFINITE_FORMS : INDEFINITE_FORMS;
   const wrong = shuffle(pool.filter(f => f !== correctForm)).slice(0, 3);
   return shuffle([correctForm, ...wrong]);
-}
-
-// --- Personal Pronouns (pre-baked) ---
-
-let pronounExerciseId = 0;
-
-export function generatePronounExercise(): PronounExercise {
-  const data = pronounExercises[Math.floor(Math.random() * pronounExercises.length)];
-
-  pronounExerciseId += 1;
-
-  return {
-    id: pronounExerciseId,
-    person: data.person,
-    case: data.case,
-    correctForm: data.correctForm,
-    sentenceBefore: data.sentenceBefore,
-    sentenceAfter: data.sentenceAfter,
-    translation: data.translation,
-  };
 }
 
 const PRONOUN_FORMS: Record<Person, Record<string, string>> = {
@@ -287,26 +199,6 @@ export function getPronounOptions(person: Person, grammaticalCase: GrammaticalCa
   return shuffle([correctForm].concat(wrong));
 }
 
-// --- Prateritum (pre-baked) ---
-
-let praeteritumExerciseId = 0;
-
-export function generatePraeteritumExercise(): PraeteritumExercise {
-  const data = praeteritumExercises[Math.floor(Math.random() * praeteritumExercises.length)];
-
-  praeteritumExerciseId += 1;
-
-  return {
-    id: praeteritumExerciseId,
-    infinitive: data.infinitive,
-    correctForm: data.correctForm,
-    sentenceBefore: data.sentenceBefore,
-    sentenceAfter: data.sentenceAfter,
-    particle: data.particle,
-    translation: data.translation,
-  };
-}
-
 /**
  * Generate 3 wrong Präteritum options using other conjugations of the SAME verb.
  * Falls back to the global pool if not enough same-verb forms exist.
@@ -326,26 +218,6 @@ export function getPraeteritumOptions(infinitive: string, correctForm: string): 
   }
 
   return shuffle([correctForm, ...wrong]);
-}
-
-// --- Perfekt (pre-baked) ---
-
-let perfektExerciseId = 0;
-
-export function generatePerfektExercise(): PerfektExercise {
-  const data = perfektExercises[Math.floor(Math.random() * perfektExercises.length)];
-
-  perfektExerciseId += 1;
-
-  return {
-    id: perfektExerciseId,
-    infinitive: data.infinitive,
-    auxiliary: data.auxiliary,
-    pastParticiple: data.pastParticiple,
-    sentenceBefore: data.sentenceBefore,
-    sentenceAfter: data.sentenceAfter,
-    translation: data.translation,
-  };
 }
 
 /**
@@ -393,4 +265,76 @@ export function getPerfektOptions(infinitive: string, correctForm: string): stri
   }
 
   return shuffle([correctForm, ...wrong]);
+}
+
+/**
+ * Score a question for selection priority.
+ * Higher score = more likely to be selected.
+ */
+function scoreQuestion(
+  questionId: string,
+  stats: QuestionStatsMap
+): number {
+  const record = stats[questionId];
+
+  // Never seen -> highest priority
+  if (!record || record.attempts === 0) {
+    return 1.0;
+  }
+
+  const accuracy = record.correct / record.attempts;
+
+  // Tiered scoring based on accuracy
+  let score: number;
+  if (accuracy <= 0.5) {
+    score = 0.8;
+  } else if (accuracy <= 0.8) {
+    score = 0.5;
+  } else {
+    score = 0.2;
+  }
+
+  // Recency bonus: +0.1 if not seen in 7+ days
+  const lastSeen = new Date(record.lastSeen);
+  const daysSince = (Date.now() - lastSeen.getTime()) / (1000 * 60 * 60 * 24);
+  if (daysSince >= 7) {
+    score += 0.1;
+  }
+
+  return score;
+}
+
+/**
+ * Select `count` exercises from `pool` using smart prioritization.
+ * Returns exercises in shuffled order with their question IDs.
+ */
+export async function selectExercises<T>(
+  mode: ExerciseMode,
+  pool: T[],
+  count: number
+): Promise<{ exercises: T[]; questionIds: string[] }> {
+  const stats = await getQuestionStats();
+
+  // Score each exercise in the pool
+  const scored = pool.map((item, index) => {
+    const questionId = `${mode}:${index}`;
+    const priority = scoreQuestion(questionId, stats);
+    // Add random jitter (0.8-1.2) to avoid determinism
+    const jitter = 0.8 + Math.random() * 0.4;
+    return { item, questionId, score: priority * jitter, index };
+  });
+
+  // Sort by score descending
+  scored.sort((a, b) => b.score - a.score);
+
+  // Take top `count` (capped at pool size)
+  const selected = scored.slice(0, Math.min(count, pool.length));
+
+  // Shuffle for presentation order
+  const shuffled = shuffle(selected);
+
+  return {
+    exercises: shuffled.map((s) => s.item),
+    questionIds: shuffled.map((s) => s.questionId),
+  };
 }

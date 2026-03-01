@@ -13,9 +13,10 @@ import {
 const useNativeDriver = Platform.OS !== "web";
 import { useFocusEffect } from "@react-navigation/native";
 import { useRouter } from "expo-router";
-import { generatePossessiveExercise, getPossessiveOptions } from "../../lib/exercise-logic";
-import { recordAnswer, recordSession } from "../../lib/stats";
-import { PossessiveExercise, ExercisePhase } from "../../lib/types";
+import { selectExercises, getAllPossessiveExercises, getPossessiveOptions } from "../../lib/exercise-logic";
+import { recordAnswer, recordSession, recordQuestionAnswer } from "../../lib/stats";
+import { ExercisePhase } from "../../lib/types";
+import type { PossessiveExerciseData } from "../../data/possessives-exercises";
 import { colors, spacing } from "../../constants/theme";
 import CelebrationOverlay, { CelebrationVariant } from "../../components/CelebrationOverlay";
 import ExerciseSetup from "../../components/ExerciseSetup";
@@ -43,8 +44,8 @@ export default function PossessivesScreen() {
   const router = useRouter();
   const [phase, setPhase] = useState<ExercisePhase>("setup");
   const [targetCount, setTargetCount] = useState(10);
-  const [exercise, setExercise] = useState<PossessiveExercise>(
-    () => generatePossessiveExercise()
+  const [exercise, setExercise] = useState<PossessiveExerciseData>(
+    () => getAllPossessiveExercises()[0]
   );
   const [options, setOptions] = useState<string[]>(() =>
     getPossessiveOptions(exercise.person, exercise.correctForm)
@@ -60,6 +61,10 @@ export default function PossessivesScreen() {
   const totalRef = useRef(0);
   const correctRef = useRef(0);
   const comboRef = useRef(0);
+
+  const exercisesRef = useRef<PossessiveExerciseData[]>([]);
+  const questionIdsRef = useRef<string[]>([]);
+  const exerciseIndexRef = useRef(0);
 
   useFocusEffect(
     useCallback(() => {
@@ -98,15 +103,18 @@ export default function PossessivesScreen() {
     });
   }, [shakeAnim]);
 
-  const handleStart = useCallback((count: number) => {
+  const handleStart = useCallback(async (count: number) => {
     setTargetCount(count);
     setTotal(0);
     setCorrect(0);
     totalRef.current = 0;
     correctRef.current = 0;
-    const ex = generatePossessiveExercise();
-    setExercise(ex);
-    setOptions(getPossessiveOptions(ex.person, ex.correctForm));
+    const { exercises, questionIds } = await selectExercises("possessives", getAllPossessiveExercises(), count);
+    exercisesRef.current = exercises;
+    questionIdsRef.current = questionIds;
+    exerciseIndexRef.current = 0;
+    setExercise(exercises[0]);
+    setOptions(getPossessiveOptions(exercises[0].person, exercises[0].correctForm));
     setSelected(null);
     setIsCorrect(null);
     setShowCelebration(false);
@@ -148,6 +156,7 @@ export default function PossessivesScreen() {
       triggerShake();
     }
     recordAnswer("possessives", result);
+    recordQuestionAnswer(questionIdsRef.current[exerciseIndexRef.current], result);
   }, [selected, exercise.correctForm, triggerShake]);
 
   const handleNext = useCallback(() => {
@@ -172,7 +181,9 @@ export default function PossessivesScreen() {
       duration: 150,
       useNativeDriver,
     }).start(() => {
-      const ex = generatePossessiveExercise();
+      const nextIndex = exerciseIndexRef.current + 1;
+      exerciseIndexRef.current = nextIndex;
+      const ex = exercisesRef.current[nextIndex];
       setExercise(ex);
       setOptions(getPossessiveOptions(ex.person, ex.correctForm));
       setSelected(null);

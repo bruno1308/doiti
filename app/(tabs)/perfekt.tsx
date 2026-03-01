@@ -13,9 +13,10 @@ import {
 const useNativeDriver = Platform.OS !== "web";
 import { useFocusEffect } from "@react-navigation/native";
 import { useRouter } from "expo-router";
-import { generatePerfektExercise, getPerfektOptions } from "../../lib/exercise-logic";
-import { recordAnswer, recordSession } from "../../lib/stats";
-import { PerfektExercise, ExercisePhase } from "../../lib/types";
+import { selectExercises, getAllPerfektExercises, getPerfektOptions } from "../../lib/exercise-logic";
+import { recordAnswer, recordSession, recordQuestionAnswer } from "../../lib/stats";
+import { ExercisePhase } from "../../lib/types";
+import type { PerfektExerciseData } from "../../data/perfekt-exercises";
 import { colors, spacing } from "../../constants/theme";
 import CelebrationOverlay, { CelebrationVariant } from "../../components/CelebrationOverlay";
 import ExerciseSetup from "../../components/ExerciseSetup";
@@ -27,8 +28,8 @@ export default function PerfektScreen() {
   const router = useRouter();
   const [phase, setPhase] = useState<ExercisePhase>("setup");
   const [targetCount, setTargetCount] = useState(10);
-  const [exercise, setExercise] = useState<PerfektExercise>(
-    () => generatePerfektExercise()
+  const [exercise, setExercise] = useState<PerfektExerciseData>(
+    () => getAllPerfektExercises()[0]
   );
   const [options, setOptions] = useState<string[]>(() =>
     getPerfektOptions(exercise.infinitive, exercise.pastParticiple)
@@ -44,6 +45,10 @@ export default function PerfektScreen() {
   const totalRef = useRef(0);
   const correctRef = useRef(0);
   const comboRef = useRef(0);
+
+  const exercisesRef = useRef<PerfektExerciseData[]>([]);
+  const questionIdsRef = useRef<string[]>([]);
+  const exerciseIndexRef = useRef(0);
 
   useFocusEffect(
     useCallback(() => {
@@ -82,15 +87,18 @@ export default function PerfektScreen() {
     });
   }, [shakeAnim]);
 
-  const handleStart = useCallback((count: number) => {
+  const handleStart = useCallback(async (count: number) => {
     setTargetCount(count);
     setTotal(0);
     setCorrect(0);
     totalRef.current = 0;
     correctRef.current = 0;
-    const ex = generatePerfektExercise();
-    setExercise(ex);
-    setOptions(getPerfektOptions(ex.infinitive, ex.pastParticiple));
+    const { exercises, questionIds } = await selectExercises("perfekt", getAllPerfektExercises(), count);
+    exercisesRef.current = exercises;
+    questionIdsRef.current = questionIds;
+    exerciseIndexRef.current = 0;
+    setExercise(exercises[0]);
+    setOptions(getPerfektOptions(exercises[0].infinitive, exercises[0].pastParticiple));
     setSelected(null);
     setIsCorrect(null);
     setShowCelebration(false);
@@ -132,6 +140,7 @@ export default function PerfektScreen() {
       triggerShake();
     }
     recordAnswer("perfekt", result);
+    recordQuestionAnswer(questionIdsRef.current[exerciseIndexRef.current], result);
   }, [selected, exercise.pastParticiple, triggerShake]);
 
   const handleNext = useCallback(() => {
@@ -156,7 +165,9 @@ export default function PerfektScreen() {
       duration: 150,
       useNativeDriver,
     }).start(() => {
-      const ex = generatePerfektExercise();
+      const nextIndex = exerciseIndexRef.current + 1;
+      exerciseIndexRef.current = nextIndex;
+      const ex = exercisesRef.current[nextIndex];
       setExercise(ex);
       setOptions(getPerfektOptions(ex.infinitive, ex.pastParticiple));
       setSelected(null);

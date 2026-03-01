@@ -13,8 +13,8 @@ import {
 const useNativeDriver = Platform.OS !== "web";
 import { useFocusEffect } from "@react-navigation/native";
 import { useRouter } from "expo-router";
-import { getShuffledCaseSentences } from "../../lib/exercise-logic";
-import { recordAnswer, recordSession } from "../../lib/stats";
+import { selectExercises, getAllCaseSentences } from "../../lib/exercise-logic";
+import { recordAnswer, recordSession, recordQuestionAnswer } from "../../lib/stats";
 import { CaseSentence, ExercisePhase, GrammaticalCase } from "../../lib/types";
 import { colors, spacing } from "../../constants/theme";
 import CelebrationOverlay, { CelebrationVariant } from "../../components/CelebrationOverlay";
@@ -50,7 +50,7 @@ export default function CasesScreen() {
   const router = useRouter();
   const [phase, setPhase] = useState<ExercisePhase>("setup");
   const [targetCount, setTargetCount] = useState(10);
-  const [sentences, setSentences] = useState<CaseSentence[]>(() => getShuffledCaseSentences());
+  const [sentences, setSentences] = useState<CaseSentence[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selections, setSelections] = useState<Record<number, GrammaticalCase>>({});
   const [checked, setChecked] = useState(false);
@@ -64,6 +64,8 @@ export default function CasesScreen() {
   const totalRef = useRef(0);
   const correctRef = useRef(0);
   const comboRef = useRef(0);
+
+  const questionIdsRef = useRef<string[]>([]);
 
   // Record partial session on blur, reset to setup on focus
   useFocusEffect(
@@ -98,14 +100,16 @@ export default function CasesScreen() {
 
   const accuracy = totalAnswered === 0 ? 0 : Math.round((totalCorrect / totalAnswered) * 100);
 
-  const handleStart = useCallback((count: number) => {
+  const handleStart = useCallback(async (count: number) => {
     setTargetCount(count);
     setTotalAnswered(0);
     setTotalCorrect(0);
     setQuestionsCompleted(0);
     totalRef.current = 0;
     correctRef.current = 0;
-    setSentences(getShuffledCaseSentences());
+    const { exercises, questionIds } = await selectExercises("cases", getAllCaseSentences(), count);
+    setSentences(exercises);
+    questionIdsRef.current = questionIds;
     setCurrentIndex(0);
     setSelections({});
     setChecked(false);
@@ -158,7 +162,10 @@ export default function CasesScreen() {
       comboRef.current = 0;
       setCombo(0);
     }
-  }, [allSelected, checked, sentence, selections]);
+
+    const allCorrect = correctCount === sentence.nounPhrases.length;
+    recordQuestionAnswer(questionIdsRef.current[currentIndex], allCorrect);
+  }, [allSelected, checked, sentence, selections, currentIndex]);
 
   const handleNext = useCallback(() => {
     const newQuestionsCompleted = questionsCompleted + 1;

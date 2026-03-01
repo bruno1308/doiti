@@ -120,3 +120,11 @@ export interface AllStats {
   perfekt: ModeStats;
   sessions: SessionStats[];
 }
+
+export interface QuestionRecord {
+  attempts: number;
+  correct: number;
+  lastSeen: string; // ISO date
+}
+
+export type QuestionStatsMap = Record<string, QuestionRecord>;

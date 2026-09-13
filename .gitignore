@@ -40,3 +40,9 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# Local reference and exercise QA artifacts
+/book.pdf
+/tmp/
+/.playwright-mcp/
+/overall-a1-puzzle.png

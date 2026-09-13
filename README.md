@@ -31,6 +31,28 @@
 - Progress tracking (stored locally)
 - No account required, no internet needed
 
+### Overall A1 and Overall A2
+
+Two mixed grammar categories offer **3,037 exercises: 1,644 A1 and 1,393 A2**,
+adapted from throughout the supplied *A-Grammatik* workbook:
+
+- Fill one or several gaps by choosing from four options per gap.
+- Choose conjugated verbs, including separable verbs and both parts of the Perfekt.
+- Choose an answer and get an explanation after checking.
+- Drag sentence pieces into numbered slots, swap placed pieces, or return them to
+  the bank. Tapping and keyboard activation provide an alternative to dragging.
+
+Choose a mixed session or one format, with 5–50 questions. Sessions prioritize
+unseen and weaker exercises. English translations are offered where available,
+mistakes can be reviewed at the end, and each level has its own
+progress and History entries. Existing saved progress is preserved.
+
+The bank includes 2,917 distinct workbook adaptations plus the original 120
+questions. Duplicate workbook questions retain all page references. Open-ended
+group discussions are not automatically graded. The PDF, artwork and audio are
+not bundled into the app. See [the content notes](docs/overall-practice.md) and
+[page-by-page coverage](docs/book-coverage.md).
+
 ## Getting Started
 
 ### Prerequisites
@@ -154,7 +176,22 @@ Contributions are welcome! Some ideas:
 
 - German nouns: curated from [gambolputty/german-nouns](https://github.com/gambolputty/german-nouns) (CC-BY-SA-4.0)
 - Adjective templates and case sentences: hand-crafted
+- Overall A1/A2: newly authored exercises following the grammar topics and task
+  formats in *A-Grammatik: Übungsgrammatik Deutsch als Fremdsprache*, Anne Buscha
+  and Szilvia Szita, SCHUBERT-Verlag (2010); local reference: `book.pdf`.
 
 ## License
 
 This project is open source. Data files are licensed under CC-BY-SA-4.0.
+
+## Focused practice
+
+All 19 focused modes now use the same no-typing experience as Overall practice.
+They include sentence dragging, clickable answers, and matching boards for
+comparisons, opposites, and similar meanings. Existing exercises and progress
+are preserved, and book-question progress is shared across modes.
+See [the focused practice rollout](docs/focused-practice.md) for coverage and controls.
+
+Conversation adds ten everyday scenarios with five objectives each. Build replies
+word by word using four choices per slot, correct mistakes, and follow the dialogue.
+See [Conversation practice](docs/conversation.md).

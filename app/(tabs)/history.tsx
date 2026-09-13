@@ -1,23 +1,12 @@
+import { modeNames } from "../../data/practice-modes";
 import React, { useState, useCallback } from "react";
 import { View, Text, StyleSheet, ScrollView } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { getStats } from "../../lib/stats";
-import { AllStats, ExerciseMode } from "../../lib/types";
+import { AllStats } from "../../lib/types";
 import { colors, spacing } from "../../constants/theme";
 
-const modeNames: Record<ExerciseMode, string> = {
-  gender: "Der/Die/Das",
-  adjectives: "Adjective Endings",
-  cases: "Case Identification",
-  possessives: "Possessive Pronouns",
-  articles: "Articles",
-  pronouns: "Personal Pronouns",
-  praeteritum: "Präteritum",
-  perfekt: "Perfekt",
-  plurals: "Plurals",
-  prepositions: "Prepositions",
-  modals: "Modal Verbs",
-};
+
 
 function formatDate(dateStr: string): string {
   try {

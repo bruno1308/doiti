@@ -1,3 +1,5 @@
+import { Ionicons } from "@expo/vector-icons";
+import { allPracticeModes as practiceModes, type PracticeMode } from "../../data/practice-modes";
 import React, { useState, useCallback } from "react";
 import {
   View,
@@ -7,10 +9,11 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  Pressable,
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { useRouter } from "expo-router";
-import { getStats } from "../../lib/stats";
+import { getStats, emptyStats } from "../../lib/stats";
 import { AllStats, ModeStats } from "../../lib/types";
 import { colors, spacing } from "../../constants/theme";
 
@@ -27,10 +30,24 @@ const pluralsCard = require("../../assets/images/plurals-card.png") as ImageSour
 const prepositionsCard = require("../../assets/images/prepositions-card.png") as ImageSourcePropType;
 const modalsCard = require("../../assets/images/modals-card.png") as ImageSourcePropType;
 
+const modeImages: Partial<Record<PracticeMode, ImageSourcePropType>> = {
+  gender: genderCard, adjectives: adjectivesCard, cases: casesCard, possessives: possessivesCard,
+  articles: articlesCard, pronouns: pronounsCard, praeteritum: praeteritumCard, perfekt: perfektCard,
+  plurals: pluralsCard, prepositions: prepositionsCard, modals: modalsCard,
+};
+const categories: Record<string, PracticeMode[]> = {
+  All: [],
+  "Nouns & cases": ["gender", "adjectives", "cases", "possessives", "articles", "pronouns", "plurals", "prepositions"],
+  Verbs: ["praeteritum", "perfekt", "modals", "separable", "reflexive", "passive", "conditionals"],
+  Sentences: ["connectors", "clauses", "conditionals", "separable", "passive", "conversation"],
+  "Word pairs": ["comparisons", "word-pairs"],
+};
+
 interface ModeCardProps {
   title: string;
   subtitle: string;
-  image: ImageSourcePropType;
+  image?: ImageSourcePropType;
+  icon?: React.ComponentProps<typeof Ionicons>["name"];
   accentColor: string;
   modeStats: ModeStats;
   onPress: () => void;
@@ -40,6 +57,7 @@ function ModeCard({
   title,
   subtitle,
   image,
+  icon,
   accentColor,
   modeStats,
   onPress,
@@ -48,12 +66,14 @@ function ModeCard({
 
   return (
     <TouchableOpacity
+      accessibilityRole="button"
+      accessibilityLabel={title}
       style={[styles.card, { borderLeftColor: accentColor }]}
       onPress={onPress}
       activeOpacity={0.7}
     >
       <View style={styles.cardHeader}>
-        <Image source={image} style={styles.cardImage} />
+        {image ? <Image source={image} style={styles.cardImage} /> : <View style={[styles.cardImage, { alignItems: "center", justifyContent: "center", backgroundColor: colors.background }]}><Ionicons name={icon ?? "extension-puzzle-outline"} size={30} color={accentColor} /></View>}
         <View style={styles.cardTitleContainer}>
           <View style={styles.cardTitleRow}>
             <Text style={styles.cardTitle}>{title}</Text>
@@ -72,20 +92,8 @@ function ModeCard({
 
 export default function HomeScreen() {
   const router = useRouter();
-  const [stats, setStats] = useState<AllStats>({
-    gender: { totalAttempted: 0, totalCorrect: 0 },
-    adjectives: { totalAttempted: 0, totalCorrect: 0 },
-    cases: { totalAttempted: 0, totalCorrect: 0 },
-    possessives: { totalAttempted: 0, totalCorrect: 0 },
-    articles: { totalAttempted: 0, totalCorrect: 0 },
-    pronouns: { totalAttempted: 0, totalCorrect: 0 },
-    praeteritum: { totalAttempted: 0, totalCorrect: 0 },
-    perfekt: { totalAttempted: 0, totalCorrect: 0 },
-    plurals: { totalAttempted: 0, totalCorrect: 0 },
-    prepositions: { totalAttempted: 0, totalCorrect: 0 },
-    modals: { totalAttempted: 0, totalCorrect: 0 },
-    sessions: [],
-  });
+  const [stats, setStats] = useState<AllStats>(emptyStats);
+  const [category, setCategory] = useState("All");
 
   useFocusEffect(
     useCallback(() => {
@@ -113,106 +121,37 @@ export default function HomeScreen() {
 
       {/* Mode Cards */}
       <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Overall Practice</Text>
+        <ModeCard
+          title="Overall A1"
+          subtitle="Everyday basics · gaps, verbs & sentence building"
+          image={owlMascot}
+          accentColor={colors.success}
+          modeStats={stats["overall-a1"]}
+          onPress={() => router.push("/overall-a1")}
+        />
+        <ModeCard
+          title="Overall A2"
+          subtitle="Build on the basics · past tense & connected ideas"
+          image={owlMascot}
+          accentColor={colors.possessive}
+          modeStats={stats["overall-a2"]}
+          onPress={() => router.push("/overall-a2")}
+        />
+      </View>
+      <View style={styles.section}>
         <Text style={styles.sectionTitle}>Practice Modes</Text>
 
-        <ModeCard
-          title="Der/Die/Das"
-          subtitle="Learn noun genders"
-          image={genderCard}
-          accentColor={colors.primary}
-          modeStats={stats.gender}
-          onPress={() => router.push("/gender")}
-        />
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
+          {Object.keys(categories).map(name => <Pressable key={name} accessibilityRole="button" accessibilityState={{ selected: category === name }} onPress={() => setCategory(name)}
+            style={{ padding: 12, borderRadius: 20, borderWidth: 1, borderColor: category === name ? colors.success : colors.border, backgroundColor: colors.surface }}><Text style={{ color: colors.text }}>{name}</Text></Pressable>)}
+        </View>
+        {practiceModes.filter(mode => category === "All" || categories[category].includes(mode.id)).map(mode => <ModeCard
+          key={mode.id} title={mode.title} subtitle={mode.subtitle} image={modeImages[mode.id]}
+          icon={mode.icon as React.ComponentProps<typeof Ionicons>["name"]} accentColor={mode.accent}
+          modeStats={stats[mode.id]} onPress={() => router.push(`/${mode.id}`)}
+        />)}
 
-        <ModeCard
-          title="Adjective Endings"
-          subtitle="Master adjective declension"
-          image={adjectivesCard}
-          accentColor={colors.warning}
-          modeStats={stats.adjectives}
-          onPress={() => router.push("/adjectives")}
-        />
-
-        <ModeCard
-          title="Case Identification"
-          subtitle="Identify grammatical cases"
-          image={casesCard}
-          accentColor={colors.success}
-          modeStats={stats.cases}
-          onPress={() => router.push("/cases")}
-        />
-
-        <ModeCard
-          title="Possessive Pronouns"
-          subtitle="Conjugate mein, dein, sein..."
-          image={possessivesCard}
-          accentColor={colors.possessive}
-          modeStats={stats.possessives}
-          onPress={() => router.push("/possessives")}
-        />
-
-        <ModeCard
-          title="Articles"
-          subtitle="Practice definite & indefinite articles"
-          image={articlesCard}
-          accentColor={colors.articles}
-          modeStats={stats.articles}
-          onPress={() => router.push("/articles")}
-        />
-
-        <ModeCard
-          title="Personal Pronouns"
-          subtitle="Choose ich, mich, mir..."
-          image={pronounsCard}
-          accentColor={colors.pronouns}
-          modeStats={stats.pronouns}
-          onPress={() => router.push("/pronouns")}
-        />
-
-        <ModeCard
-          title="Präteritum"
-          subtitle="Practice simple past tense verb forms"
-          image={praeteritumCard}
-          accentColor={colors.praeteritum}
-          modeStats={stats.praeteritum}
-          onPress={() => router.push("/praeteritum")}
-        />
-
-        <ModeCard
-          title="Perfekt"
-          subtitle="Practice past participle forms"
-          image={perfektCard}
-          accentColor={colors.perfekt}
-          modeStats={stats.perfekt}
-          onPress={() => router.push("/perfekt")}
-        />
-
-        <ModeCard
-          title="Plurals"
-          subtitle="Practice German noun plural forms"
-          image={pluralsCard}
-          accentColor={colors.plurals}
-          modeStats={stats.plurals}
-          onPress={() => router.push("/plurals")}
-        />
-
-        <ModeCard
-          title="Prepositions"
-          subtitle="Practice prepositions and their cases"
-          image={prepositionsCard}
-          accentColor={colors.prepositions}
-          modeStats={stats.prepositions}
-          onPress={() => router.push("/prepositions")}
-        />
-
-        <ModeCard
-          title="Modal Verbs"
-          subtitle="Practice können, müssen, dürfen..."
-          image={modalsCard}
-          accentColor={colors.modals}
-          modeStats={stats.modals}
-          onPress={() => router.push("/modals")}
-        />
       </View>
 
     </ScrollView>
@@ -286,11 +225,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   cardTitle: {
+    flexShrink: 1,
     fontSize: 18,
     fontWeight: "bold",
     color: colors.text,
   },
   practicedText: {
+    marginLeft: 8,
     fontSize: 13,
     fontWeight: "600",
   },

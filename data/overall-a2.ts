@@ -1,0 +1,73 @@
+import { builders } from "./overall-builders";
+import { bookA2 } from "./book-exercises";
+import type { OverallExercise } from "../lib/overall-types";
+
+const { choice: c, text: t, order: o } = builders("A2");
+
+const exercises: OverallExercise[] = [
+  c("choice-01", "Perfekt", "1.1.3", "Wir ___ gestern nach Luzern gefahren.", "sind", ["haben", "werden"], "We went to Lucerne yesterday.", "Fahren uses sein in the Perfekt when it expresses a journey."),
+  c("choice-02", "Reflexive verbs", "1.2 / 3.2", "Lena freut ___ auf den Urlaub.", "sich", ["sie", "ihr"], "Lena is looking forward to the holiday.", "Sich freuen is reflexive. With Lena, use sich."),
+  c("choice-03", "Comparison", "4.2", "Mein Fahrrad ist älter ___ dein Fahrrad.", "als", ["wie", "denn"], "My bike is older than your bike.", "A comparative such as älter is followed by als."),
+  c("choice-04", "Comparison", "4.2", "Der blaue Koffer ist genauso groß ___ der rote.", "wie", ["als", "ob"], "The blue suitcase is just as big as the red one.", "Equal comparisons use genauso … wie."),
+  c("choice-05", "Location and direction", "5.3", "Ich lege das Buch auf ___ Tisch.", "den", ["dem", "die"], "I put the book on the table.", "Legen expresses placement toward a destination: auf + accusative."),
+  c("choice-06", "Location and direction", "5.3", "Das Buch liegt auf ___ Tisch.", "dem", ["den", "des"], "The book is lying on the table.", "Liegen describes a location: auf + dative."),
+  c("choice-07", "Subordinate clauses", "8.2", "Ich bleibe zu Hause, ___ ich krank bin.", "weil", ["denn", "deshalb"], "I am staying home because I am ill.", "Weil gives a reason and sends the conjugated verb to the end."),
+  c("choice-08", "Connecting ideas", "8.1.2", "Ich bin krank. ___ bleibe ich zu Hause.", "Deshalb", ["Weil", "Denn"], "I am ill. Therefore I am staying home.", "Deshalb expresses a result. The verb follows it in second position."),
+  c("choice-09", "Subordinate clauses", "8.2", "___ ich sechs Jahre alt war, kam ich in die Schule.", "Als", ["Wenn", "Ob"], "When I was six years old, I started school.", "Use als for a single event or period in the past."),
+  c("choice-10", "Indirect questions", "8.5", "Ich weiß nicht, ___ der Laden heute geöffnet ist.", "ob", ["dass", "weil"], "I do not know whether the shop is open today.", "Ob introduces an indirect yes/no question."),
+  c("choice-11", "Relative clauses", "3.6 / 8.6", "Das ist die Frau, ___ neben uns wohnt.", "die", ["der", "den"], "That is the woman who lives next door to us.", "Frau is feminine, and the relative pronoun is the subject: die."),
+  c("choice-12", "Adjective endings", "4.1", "Ich trage einen ___ Mantel.", "warmen", ["warmer", "warmes"], "I am wearing a warm coat.", "After einen in masculine accusative, the adjective ends in -en."),
+  c("choice-13", "Time", "5.1", "Ich lerne ___ drei Monaten Deutsch und mache weiter.", "seit", ["vor", "für"], "I have been learning German for three months and am continuing.", "Seit describes something that began in the past and is still ongoing."),
+  c("choice-14", "Verb complements", "1.6.2", "Wir warten ___ den Bus.", "auf", ["mit", "bei"], "We are waiting for the bus.", "Warten takes auf + accusative."),
+  c("choice-15", "Connecting ideas", "8.1.1", "Wir fahren nicht ans Meer, ___ in die Berge.", "sondern", ["denn", "oder"], "We are not going to the sea but to the mountains.", "Sondern corrects the alternative denied in the first part."),
+
+  t("fill-01", "fill", "Reflexive pronouns", "3.2", "Ich wasche ___ die Hände.", ["mir"], ["ich → reflexive pronoun"], "I am washing my hands.", "Die Hände is the accusative object, so the reflexive pronoun is dative: mir."),
+  t("fill-02", "fill", "Reflexive pronouns", "3.2", "Du interessierst ___ für Musik.", ["dich"], ["du → reflexive pronoun"], "You are interested in music.", "Sich interessieren für takes an accusative reflexive pronoun: dich."),
+  t("fill-03", "fill", "Adjective endings", "4.1", "Wir wohnen in einer ___ Wohnung.", ["kleinen"], ["klein"], "We live in a small apartment.", "Location takes dative; after einer the adjective ends in -en."),
+  t("fill-04", "fill", "Adjective endings", "4.1", "Ich trinke gern ___ Wasser.", ["kaltes"], ["kalt"], "I like drinking cold water.", "Without an article, the neuter accusative adjective takes -es."),
+  t("fill-05", "fill", "Comparison", "4.2", "Dieser Weg ist ___ als der andere.", ["kürzer"], ["kurz → comparative"], "This path is shorter than the other one.", "Kurz adds an umlaut and -er: kürzer."),
+  t("fill-06", "fill", "Comparison", "4.2", "Von allen Jahreszeiten mag ich den Sommer am ___.", ["liebsten"], ["gern → superlative"], "Of all the seasons, I like summer best.", "The comparison is gern, lieber, am liebsten."),
+  t("fill-07", "fill", "Relative clauses", "3.6 / 8.6", "Das ist der Film, ___ ich gestern gesehen habe.", ["den"], ["der → accusative relative pronoun"], "That is the film I saw yesterday.", "Film is masculine and the object of gesehen habe: den."),
+  t("fill-08", "fill", "Relative clauses", "3.6 / 8.6", "Das ist der Kollege, mit ___ ich arbeite.", ["dem"], ["masculine relative pronoun after mit"], "That is the colleague I work with.", "Mit takes dative, so the masculine relative pronoun is dem."),
+  t("fill-09", "fill", "Verb complements", "1.6.2", "Sie träumt ___ einer Reise nach Japan.", ["von"], ["dream of"], "She dreams of a trip to Japan.", "Träumen takes von + dative."),
+  t("fill-10", "fill", "Verb complements", "1.6.2", "Ich denke oft ___ meine Familie.", ["an"], ["think of"], "I often think of my family.", "Denken takes an + accusative."),
+  t("fill-11", "fill", "Dative plural", "2.3 / 5.1", "Sie fährt mit den ___ zum Zoo.", ["Kindern"], ["das Kind → dative plural"], "She is going to the zoo with the children.", "Dative plural usually adds -n: mit den Kindern."),
+  t("fill-12", "fill", "Infinitive with zu", "8.4", "Ich versuche, jeden Tag Deutsch ___.", ["zu sprechen"], ["sprechen + zu"], "I try to speak German every day.", "Versuchen is followed by an infinitive with zu."),
+  t("fill-13", "fill", "Infinitive with zu", "8.4", "Ich habe vor, morgen früh ___.", ["aufzustehen"], ["aufstehen + zu"], "I plan to get up early tomorrow.", "With a separable verb, zu goes between the prefix and stem: aufzustehen."),
+  t("fill-14", "fill", "Subordinate clauses", "8.3", "Ich hoffe, ___ du bald wieder gesund bist.", ["dass"], ["that"], "I hope that you will be well again soon.", "Dass introduces the content of the hope; the verb comes last."),
+  t("fill-15", "fill", "Indefinite pronouns", "3.4.2", "Ist jemand zu Hause? — Nein, ___ ist zu Hause.", ["niemand"], ["nobody"], "Is anyone at home? — No, nobody is at home.", "Niemand refers to no person and takes a singular verb."),
+
+  t("verb-01", "conjugation", "Perfekt", "1.1.3", "Ich ___ gestern eine Suppe ___.", ["habe", "gekocht"], ["kochen · Perfekt: auxiliary", "kochen · participle"], "I cooked a soup yesterday.", "Kochen forms the Perfekt with haben + gekocht."),
+  t("verb-02", "conjugation", "Perfekt", "1.1.3", "Wir ___ am Sonntag nach Bern ___.", ["sind", "gefahren"], ["fahren · Perfekt: auxiliary", "fahren · participle"], "We went to Bern on Sunday.", "A journey with fahren uses sein + gefahren."),
+  t("verb-03", "conjugation", "Perfekt", "1.1.3", "Mara ___ ihre Freundin ___.", ["hat", "besucht"], ["besuchen · Perfekt: auxiliary", "besuchen · participle"], "Mara visited her friend.", "The inseparable prefix be- prevents ge-: besucht."),
+  t("verb-04", "conjugation", "Perfekt", "1.1.3", "Ihr ___ gestern ___.", ["habt", "eingekauft"], ["einkaufen · Perfekt: auxiliary", "einkaufen · participle"], "You went shopping yesterday.", "For a separable verb, ge goes between the prefix and stem: eingekauft."),
+  t("verb-05", "conjugation", "Perfekt", "1.1.3", "Der Zug ___ pünktlich ___.", ["ist", "angekommen"], ["ankommen · Perfekt: auxiliary", "ankommen · participle"], "The train arrived on time.", "Ankommen uses sein + angekommen."),
+  t("verb-06", "conjugation", "Perfekt", "1.1.3", "Du ___ die Rechnung ___.", ["hast", "bezahlt"], ["bezahlen · Perfekt: auxiliary", "bezahlen · participle"], "You paid the bill.", "Bezahlen has an inseparable prefix and forms bezahlt without ge-."),
+  t("verb-07", "conjugation", "Präteritum", "1.1.4", "Als Kind ___ ich oft bei meiner Oma.", ["war"], ["sein · Präteritum"], "As a child, I was often at my grandmother's.", "The Präteritum of sein with ich is war."),
+  t("verb-08", "conjugation", "Präteritum", "1.1.4", "Wir ___ gestern keine Zeit.", ["hatten"], ["haben · Präteritum"], "We had no time yesterday.", "The Präteritum form with wir is hatten."),
+  t("verb-09", "conjugation", "Past modal verbs", "1.1.4", "Ich ___ gestern länger arbeiten.", ["musste"], ["müssen · Präteritum"], "I had to work longer yesterday.", "The Präteritum is musste, without an umlaut."),
+  t("verb-10", "conjugation", "Past modal verbs", "1.1.4", "___ du als Kind schon schwimmen?", ["Konntest"], ["können · Präteritum"], "Could you already swim as a child?", "Können becomes konnte in the past; du takes -st: konntest."),
+  t("verb-11", "conjugation", "Polite requests", "1.4.1", "___ Sie mir bitte helfen?", ["Könnten"], ["können · Konjunktiv II"], "Could you please help me?", "Könnten Sie …? is a polite request. Keep the umlaut."),
+  t("verb-12", "conjugation", "Polite requests", "1.4.1", "Ich ___ gern einen Tee.", ["hätte"], ["haben · Konjunktiv II"], "I would like a tea.", "Ich hätte gern … is a polite way to ask for something."),
+  t("verb-13", "conjugation", "Imperative", "1.3", "___ bitte leise!", ["Sei"], ["sein · du imperative"], "Please be quiet!", "The singular informal imperative of sein is sei."),
+  t("verb-14", "conjugation", "Imperative", "1.3", "___ bitte eure Bücher mit!", ["Bringt"], ["mitbringen · ihr imperative: verb"], "Please bring your books!", "The ihr imperative is bringt. The separable prefix mit comes last."),
+  t("verb-15", "conjugation", "Perfekt", "1.1.3", "Wir ___ am Wochenende zu Hause ___.", ["sind", "geblieben"], ["bleiben · Perfekt: auxiliary", "bleiben · participle"], "We stayed at home at the weekend.", "Bleiben uses sein even though it does not express movement."),
+
+  o("order-01", "Perfekt word order", "7.1", ["Gestern", "habe", "ich", "meine Schwester", "besucht."], "I visited my sister yesterday.", "The auxiliary is second and the participle comes last."),
+  o("order-02", "Perfekt word order", "7.1", ["Wann", "seid", "ihr", "angekommen?"], "When did you arrive?", "The question word comes first, then the auxiliary, with the participle last."),
+  o("order-03", "Subordinate clauses", "8.2", ["Ich bleibe zu Hause,", "weil", "ich", "müde", "bin."], "I am staying home because I am tired.", "Weil introduces a subordinate clause, with bin at the end."),
+  o("order-04", "Subordinate clauses", "8.3", ["Ich glaube,", "dass", "sie", "heute", "kommt."], "I think she is coming today.", "The conjugated verb comes last in a dass-clause."),
+  o("order-05", "Subordinate clauses", "8.2", ["Wenn es regnet,", "nehmen", "wir", "den Bus."], "When it rains, we take the bus.", "The whole subordinate clause occupies first position; nehmen comes next."),
+  o("order-06", "Connecting ideas", "8.1.2", ["Es ist kalt.", "Deshalb", "ziehe", "ich", "eine Jacke", "an."], "It is cold. Therefore I am putting on a jacket.", "After Deshalb comes the conjugated verb. The prefix an closes the sentence."),
+  o("order-07", "Indirect questions", "8.5", ["Weißt du,", "ob", "der Zug", "pünktlich", "ist?"], "Do you know whether the train is on time?", "An indirect yes/no question uses ob and verb-final order."),
+  o("order-08", "Indirect questions", "8.5", ["Kannst du mir sagen,", "wann", "der Kurs", "beginnt?"], "Can you tell me when the course starts?", "In an indirect question, the conjugated verb moves to the end."),
+  o("order-09", "Relative clauses", "8.6", ["Das ist der Mann,", "der", "hier", "arbeitet."], "That is the man who works here.", "The relative pronoun der is the subject, and arbeitet comes last."),
+  o("order-10", "Infinitive with zu", "8.4", ["Ich habe keine Zeit,", "heute", "ins Kino", "zu gehen."], "I have no time to go to the cinema today.", "The infinitive with zu closes the phrase after keine Zeit haben."),
+  o("order-11", "Reflexive verbs", "1.2 / 7.2.1", ["Am Abend", "entspanne", "ich", "mich."], "I relax in the evening.", "The time phrase comes first, then the verb and subject, followed by mich."),
+  o("order-12", "Object order", "7.2.1", ["Ich", "gebe", "es", "ihr."], "I am giving it to her.", "With two unstressed object pronouns, accusative es comes before dative ihr."),
+  o("order-13", "Connecting ideas", "8.1.1", ["Ich nehme den Bus,", "denn", "mein Fahrrad", "ist", "kaputt."], "I am taking the bus because my bike is broken.", "Denn connects main clauses, so ist keeps its normal second position."),
+  o("order-14", "Subordinate clauses", "8.2", ["Ich bin müde,", "weil", "ich", "schlecht", "geschlafen", "habe."], "I am tired because I slept badly.", "In a Perfekt subordinate clause, the conjugated auxiliary follows the participle."),
+  o("order-15", "Word order", "7.2.1", ["Wir", "fahren", "morgen", "mit dem Zug", "nach Basel."], "We are going to Basel by train tomorrow.", "Time normally precedes means of transport and destination. The transport and time phrases can also switch for emphasis.", [[0, 1, 3, 2, 4]]),
+];
+
+export default [...exercises, ...bookA2];

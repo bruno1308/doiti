@@ -1,3 +1,4 @@
+import { allPracticeModes as practiceModes } from "../../data/practice-modes";
 import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -12,6 +13,9 @@ export default function TabLayout() {
         tabBarStyle: { backgroundColor: "#1e293b", borderTopColor: "#334155" },
       }}
     >
+      {practiceModes.map(mode => <Tabs.Screen key={mode.id} name={mode.id} options={{ title: mode.title, href: null }} />)}
+      <Tabs.Screen name="overall-a1" options={{ title: "Overall A1", href: null }} />
+      <Tabs.Screen name="overall-a2" options={{ title: "Overall A2", href: null }} />
       <Tabs.Screen
         name="index"
         options={{
@@ -28,72 +32,6 @@ export default function TabLayout() {
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="time" size={size} color={color} />
           ),
-        }}
-      />
-      <Tabs.Screen
-        name="gender"
-        options={{
-          href: null,
-        }}
-      />
-      <Tabs.Screen
-        name="adjectives"
-        options={{
-          href: null,
-        }}
-      />
-      <Tabs.Screen
-        name="cases"
-        options={{
-          href: null,
-        }}
-      />
-      <Tabs.Screen
-        name="possessives"
-        options={{
-          href: null,
-        }}
-      />
-      <Tabs.Screen
-        name="articles"
-        options={{
-          href: null,
-        }}
-      />
-      <Tabs.Screen
-        name="pronouns"
-        options={{
-          href: null,
-        }}
-      />
-      <Tabs.Screen
-        name="praeteritum"
-        options={{
-          href: null,
-        }}
-      />
-      <Tabs.Screen
-        name="perfekt"
-        options={{
-          href: null,
-        }}
-      />
-      <Tabs.Screen
-        name="plurals"
-        options={{
-          href: null,
-        }}
-      />
-      <Tabs.Screen
-        name="prepositions"
-        options={{
-          href: null,
-        }}
-      />
-      <Tabs.Screen
-        name="modals"
-        options={{
-          href: null,
         }}
       />
     </Tabs>

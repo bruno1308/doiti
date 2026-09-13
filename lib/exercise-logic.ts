@@ -5,7 +5,7 @@ import caseExercises from "../data/case-exercises";
 import possessiveExercises from "../data/possessives-exercises";
 import articleExercises from "../data/article-exercises";
 import adjectiveExercises from "../data/adjective-exercises";
-import { getQuestionStats } from "./stats";
+import { normalizeAnswer } from "./overall-logic";
 import type {
   Noun,
   CaseSentence,
@@ -145,9 +145,12 @@ function buildPossessiveForms(person: Person): string[] {
   return POSSESSIVE_ENDINGS.map(e => stem + e);
 }
 
-export function getPossessiveOptions(person: Person, correctForm: string): string[] {
+export function getPossessiveOptions(person: Person, correctForm: string, grammaticalCase?: GrammaticalCase): string[] {
   const allForms = buildPossessiveForms(person);
-  const wrong = shuffle(allForms.filter(f => f !== correctForm)).slice(0, 3);
+  const priorities = grammaticalCase === "dativ" ? [3, 4, 2] : grammaticalCase === "genitiv" ? [5, 4]
+    : grammaticalCase === "akkusativ" ? [0, 1, 2] : [0, 1];
+  const ranked = grammaticalCase ? [...priorities.map(i => allForms[i]), ...allForms] : shuffle(allForms);
+  const wrong = [...new Set(ranked)].filter(f => f.toLowerCase() !== correctForm.toLowerCase()).slice(0, 3);
   return shuffle([correctForm, ...wrong]);
 }
 
@@ -199,15 +202,15 @@ export function getPronounOptions(person: Person, grammaticalCase: GrammaticalCa
   // Build wrong answers: prefer same-person other-case forms, then fill with same-case other-person
   let wrong = uniqueOtherPersonForms.slice();
   if (wrong.length < 3) {
-    const additional = shuffle(otherSameCaseForms.filter(f => {
+    const additional = shuffle([...new Map(otherSameCaseForms.filter(f => {
       for (const w of wrong) {
         if (w.toLowerCase() === f.toLowerCase()) return false;
       }
       return true;
-    }));
+    }).map(f => [f.toLowerCase(), f])).values()]);
     wrong = wrong.concat(additional);
   }
-  wrong = shuffle(wrong).slice(0, 3);
+  wrong = wrong.slice(0, 3);
 
   return shuffle([correctForm].concat(wrong));
 }
@@ -305,7 +308,7 @@ function applyUmlaut(word: string): string | null {
  * e.g. Stunde → Stundes, Stunde, Stundeln (correct: Stunden)
  */
 export function getPluralOptions(singular: string, correctPlural: string): string[] {
-  const correctLower = correctPlural.toLowerCase();
+  const correctNormalized = normalizeAnswer(correctPlural);
   const candidates = new Set<string>();
 
   // Add common plural suffixes to the full singular
@@ -339,8 +342,10 @@ export function getPluralOptions(singular: string, correctPlural: string): strin
     candidates.add(umlauted + "er");
   }
 
-  // Remove the correct answer
-  const filtered = [...candidates].filter(c => c.toLowerCase() !== correctLower);
+  // Keep four distinct choices even when umlaut spellings normalize identically.
+  const unique = new Map([...candidates].map(candidate => [normalizeAnswer(candidate), candidate]));
+  unique.delete(correctNormalized);
+  const filtered = [...unique.values()];
   const wrong = shuffle(filtered).slice(0, 3);
   return shuffle([correctPlural, ...wrong]);
 }
@@ -439,6 +444,7 @@ export async function selectExercises<T>(
   pool: T[],
   count: number
 ): Promise<{ exercises: T[]; questionIds: string[] }> {
+  const { getQuestionStats } = await import("./stats");
   const stats = await getQuestionStats();
 
   // Score each exercise in the pool

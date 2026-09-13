@@ -36,7 +36,7 @@ export interface CaseSentence {
   translation: string;
 }
 
-export type ExerciseMode = "gender" | "adjectives" | "cases" | "possessives" | "articles" | "pronouns" | "praeteritum" | "perfekt" | "plurals" | "prepositions" | "modals";
+export type ExerciseMode = "gender" | "adjectives" | "cases" | "possessives" | "articles" | "pronouns" | "praeteritum" | "perfekt" | "plurals" | "prepositions" | "modals" | "conditionals" | "connectors" | "separable" | "clauses" | "reflexive" | "passive" | "comparisons" | "word-pairs" | "conversation" | "overall-a1" | "overall-a2";
 
 export interface PraeteritumExercise {
   id: number;
@@ -109,20 +109,7 @@ export interface ModeStats {
   totalCorrect: number;
 }
 
-export interface AllStats {
-  gender: ModeStats;
-  adjectives: ModeStats;
-  cases: ModeStats;
-  possessives: ModeStats;
-  articles: ModeStats;
-  pronouns: ModeStats;
-  praeteritum: ModeStats;
-  perfekt: ModeStats;
-  plurals: ModeStats;
-  prepositions: ModeStats;
-  modals: ModeStats;
-  sessions: SessionStats[];
-}
+export type AllStats = Record<ExerciseMode, ModeStats> & { sessions: SessionStats[] };
 
 export interface QuestionRecord {
   attempts: number;

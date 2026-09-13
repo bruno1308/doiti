@@ -1,11 +1,13 @@
 import { Platform, StyleSheet, View } from "react-native";
 import { Stack } from "expo-router";
+import InstallApp from "../components/InstallApp";
 
 export default function RootLayout() {
   if (Platform.OS === "web") {
     return (
       <View style={styles.webContainer}>
         <View style={styles.appShell}>
+          <InstallApp />
           <Stack screenOptions={{ headerShown: false }} />
         </View>
       </View>

@@ -126,6 +126,24 @@ Produces a static site in the `dist/` folder, ready to deploy anywhere.
 
 The web app auto-deploys to [GitHub Pages](https://bruno1308.github.io/doiti/) on every push to `main` via GitHub Actions.
 
+### Install on your phone
+
+Visit the live website in Chrome on Android. When Chrome makes installation
+available, the Home screen shows **Install Doiti**. You can also use Chrome's
+menu and choose **Install app** or **Add to Home screen**. Chrome controls the
+timing of its installation offer; it may require a tap and a short visit first.
+On iPhone, use Safari's Share menu and **Add to Home Screen**.
+
+The installed website uses the owl icon and opens in its own window. It uses
+the existing website and local progress storage; no account or app-store
+download is needed. Installation does not add offline caching: loading the
+website still needs an internet connection.
+
+The manifest and icons are in `public/`, and `app/+html.tsx` links them on every
+page using the configured GitHub Pages base path. The installation banner is
+web-only, hides in standalone mode, and appears only on Home when the browser
+provides a real install prompt. It never interrupts an exercise.
+
 ## Tech Stack
 
 - **React Native** + **Expo** (managed workflow)

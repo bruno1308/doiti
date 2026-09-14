@@ -61,6 +61,9 @@ function Piece({ text, label, disabled, accent, dimmed, onTap, onStart, onMove, 
 }
 
 export default function SentencePuzzle({ chunks, slots, onChange, disabled, accent, onDragStateChange }: Props) {
+  // Keep sentence-ending punctuation out of the puzzle so it cannot reveal the last piece.
+  // Original chunks still drive grading and the checked sentence.
+  const pieces = chunks.map(chunk => chunk.trimEnd().replace(/[.!?…]+$/u, ""));
   const [bankOrder] = useState(() => shuffled(chunks.map((_, i) => i).slice(1)));
   const [drag, setDrag] = useState<{ chunk: number; point: Point } | null>(null);
   const [hover, setHover] = useState<Target>(null);
@@ -88,7 +91,7 @@ export default function SentencePuzzle({ chunks, slots, onChange, disabled, acce
   };
   const endDrag = () => { setDrag(null); setHover(null); onDragStateChange(false); };
   const piece = (chunk: number, inSlot: boolean) => (
-    <Piece text={chunks[chunk]} label={`${inSlot ? "Remove" : "Place"} ${chunks[chunk]}`} disabled={disabled} accent={accent}
+    <Piece text={pieces[chunk]} label={`${inSlot ? "Remove" : "Place"} ${pieces[chunk]}`} disabled={disabled} accent={accent}
       dimmed={drag?.chunk === chunk}
       onTap={() => {
         const target = inSlot ? "bank" : activeSlot ?? slots.findIndex((s, i) => i > 0 && s === null);
@@ -109,7 +112,7 @@ export default function SentencePuzzle({ chunks, slots, onChange, disabled, acce
           <View key={i} ref={ref => { slotRefs.current[i] = ref; }} onLayout={measure}
             style={[styles.slot, (hover === i || activeSlot === i) && { borderColor: accent, backgroundColor: colors.surfaceLight }, i === 0 && styles.fixed]}>
             <Text style={styles.slotNumber}>{i === 0 ? "START" : i + 1}</Text>
-            {i === 0 ? <Text style={styles.fixedText}>{chunks[0]}</Text> : chunk !== null ? piece(chunk, true) : (
+            {i === 0 ? <Text style={styles.fixedText}>{pieces[0]}</Text> : chunk !== null ? piece(chunk, true) : (
               <Pressable accessibilityRole="button" accessibilityLabel={`Sentence slot ${i + 1}`} accessibilityState={{ selected: activeSlot === i, disabled }}
                 disabled={disabled} onPress={() => setActiveSlot(activeSlot === i ? null : i)} style={styles.emptySlot}>
                 <Text style={styles.emptyText}>{activeSlot === i ? "Choose a piece" : "Drop here"}</Text>
@@ -118,7 +121,7 @@ export default function SentencePuzzle({ chunks, slots, onChange, disabled, acce
           </View>
         ))}
       </View>
-      <Text style={styles.preview}>{slots.map(chunk => chunk === null ? "___" : chunks[chunk]).join(" ")}</Text>
+      <Text style={styles.preview}>{slots.map(chunk => chunk === null ? "___" : (disabled ? chunks : pieces)[chunk]).join(" ")}</Text>
       <View ref={bank} onLayout={measure} style={[styles.bank, slots.every(s => s !== null) && styles.emptyBank, hover === "bank" && { borderColor: accent }]}>
         <Text style={styles.label}>SENTENCE PIECES</Text>
         <View style={styles.bankPieces}>{bankOrder.filter(i => !slots.includes(i)).map(i => <View key={i}>{piece(i, false)}</View>)}</View>
@@ -126,7 +129,7 @@ export default function SentencePuzzle({ chunks, slots, onChange, disabled, acce
       </View>
       {slots.some(s => s === null) && <Text style={styles.help}>Drag or tap to place. Drop onto another piece to swap; return to the tray to remove.</Text>}
       {!disabled && <Pressable accessibilityRole="button" onPress={() => { onChange(chunks.map((_, i) => i === 0 ? 0 : null)); setActiveSlot(null); }} style={styles.reset}><Text style={{ color: accent }}>Reset puzzle</Text></Pressable>}
-      {drag && <View pointerEvents="none" style={[styles.ghost, { borderColor: accent, left: drag.point.x - bounds.current.root.x - 65, top: drag.point.y - bounds.current.root.y - 28 }]}><Text style={styles.pieceText}>{chunks[drag.chunk]}</Text></View>}
+      {drag && <View pointerEvents="none" style={[styles.ghost, { borderColor: accent, left: drag.point.x - bounds.current.root.x - 65, top: drag.point.y - bounds.current.root.y - 28 }]}><Text style={styles.pieceText}>{pieces[drag.chunk]}</Text></View>}
     </View>
   );
 }

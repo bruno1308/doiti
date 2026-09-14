@@ -42,8 +42,11 @@ export function auditBookExercises(exercises: OverallExercise[]): OverallExercis
     if (items.has(item)) throw new Error(`Duplicate workbook source: ${key}, item ${item}`);
     items.add(item); seen.set(key, items);
     const topic = rule[2]?.[item] ?? rule[1];
-    const modes = topicModes[topic];
-    if (!modes) throw new Error(`Unreviewed learning target: ${topic}`);
+    const topicTargets = topicModes[topic];
+    if (!topicTargets) throw new Error(`Unreviewed learning target: ${topic}`);
+    // Reordering a supplied prepositional phrase does not test its preposition
+    // or case. Such puzzles can still appear in Overall practice.
+    const modes = topicTargets.filter(mode => mode !== "prepositions" || exercise.kind !== "order");
     const updated = { ...exercise, topic, focusedModes: [...modes], explanation: explanations[topic] ?? (topic !== exercise.topic ? topicExplanations.get(topic) : undefined) ?? exercise.explanation };
     if (topic === "Case identification") updated.instruction = "Choose the case of the quoted phrase.";
     if (topic === "Article case contrasts") updated.instruction = "Choose the phrase that does not fit the required case.";

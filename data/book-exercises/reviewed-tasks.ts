@@ -105,6 +105,7 @@ export const topicModes: Record<string, FocusedMode[]> = {
   "Dative and accusative prepositions": [
     "prepositions"
   ],
+  "Prepositions in context": ["prepositions"],
   "Two-way prepositions": [
     "prepositions"
   ],
@@ -400,7 +401,7 @@ export const reviewedTasks: Record<string, ReviewedTask> = {
   "127:7b": [9,"Two-way prepositions"],
   "127:8": [13,"Two-way prepositions"],
   "128:9": [11,"Two-way prepositions"],
-  "129:10": [12,"Two-way prepositions"],
+  "129:10": [12,"Prepositions in context"],
   "129:11": [7,"Two-way prepositions"],
   "130:1": [2,"Question words"],
   "131:1": [5,"Question words"],

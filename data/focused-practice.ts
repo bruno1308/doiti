@@ -29,6 +29,7 @@ const topics: Record<FocusedMode, string[]> = {
   "word-pairs": [],
 };
 function include(mode: FocusedMode, e: OverallExercise) {
+  if (mode === "prepositions" && e.kind === "order") return false;
   // Imported tasks are individually audited. Never route them by a chapter
   // label, or silently opt new book content into a specialized practice deck.
   if (e.source) return e.focusedModes?.includes(mode) ?? false;

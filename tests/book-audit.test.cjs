@@ -10,6 +10,7 @@ const { reviewedTasks } = require('../data/book-exercises/reviewed-tasks.ts');
 const { auditBookExercises } = require('../data/book-exercises/audit.ts');
 const { focusedPractice } = require('../data/focused-practice.ts');
 const { overallQuestionId } = require('../lib/overall-logic.ts');
+const { checkOverallAnswer } = require('../lib/overall-logic.ts');
 
 const item = id => {
   const exercise = bookExercises.find(e => e.id === `book-${id}`);
@@ -89,4 +90,50 @@ test('book deck membership never falls back to topic labels and shared cards kee
     const sourceModes = importedBookItems.filter(raw => sources.some(s => raw.source.pdfPage === s.pdfPage && raw.source.exercise === s.exercise && raw.source.item === s.item)).flatMap(raw => raw.focusedModes);
     assert.deepEqual([...e.focusedModes].sort(), [...new Set(sourceModes)].sort(), e.id);
   }
+});
+
+test('all former preposition puzzles require preposition or case decisions with visible meaning', () => {
+  for (const [page, task, count] of [[65, '3', 8], [121, '2', 7], [129, '10', 12]]) {
+    for (let n = 1; n <= count; n++) {
+      const e = item(`p${page}-e${task}-i${n}`);
+      assert.equal(e.kind, 'fill', e.id);
+      assert.ok(focusedPractice.prepositions.pool.includes(e), e.id);
+      assert.ok(e.translation && e.instruction.includes(e.translation), `${e.id}: meaning must not require opening the translation`);
+      assert.ok(e.blanks.some(b => b.options.every(o => /^(an|auf|aus|bei|bis|durch|für|gegen|in|mit|nach|ohne|seit|über|um|unter|von|vor|zu|ab|zwischen)$/i.test(o))), `${e.id}: choose an actual preposition`);
+      assert.ok(checkOverallAnswer(e, e.blanks.map(b => b.answers[0]), []), e.id);
+    }
+  }
+  const reported = item('p121-e2-i7');
+  assert.equal(reported.sentence, 'Herr Müller kann ___ ___ Kopfschmerzen nichts tun.');
+  assert.deepEqual(reported.blanks.map(b => b.answers[0]), ['gegen', 'seine']);
+  assert.ok(!checkOverallAnswer(reported, ['für', 'seine'], []));
+  assert.ok(!checkOverallAnswer(reported, ['gegen', 'seinen'], []));
+  assert.equal(item('p129-e10-i1').topic, 'Prepositions in context');
+});
+
+test('every Prepositions card tests the preposition, its question form, or an ending it governs', () => {
+  const preposition = /^(?:an|auf|aus|bei|bis|durch|für|gegen|in|mit|nach|ohne|seit|über|um|unter|von|vor|zu|ab|zwischen|hinter|neben|gegenüber|trotz|wegen|während|statt|am|im|ins|zum|zur|beim|vom)(?:\s|$)/i;
+  const question = /^wo(?:ran|rauf|raus|bei|durch|für|gegen|rin|mit|nach|rüber|rum|runter|von|vor|zu|zwischen)$/i;
+  for (const e of focusedPractice.prepositions.pool) {
+    assert.ok(e.kind === 'fill' || e.kind === 'choice', e.id);
+    const blanks = e.kind === 'choice' ? [{ answers: [e.answer] }] : e.blanks;
+    const parts = e.sentence.split('___');
+    let before = parts[0];
+    let testsTarget = false;
+    for (let i = 0; i < blanks.length; i++) {
+      const answer = blanks[i].answers[0];
+      const precedingWord = before.trim().split(/\s+/).at(-1) ?? '';
+      const ending = /^(?:der|die|das|den|dem|des|ein(?:e|en|em|er|es)?|kein(?:e|en|em|er|es)?|(?:mein|dein|sein|ihr|unser|euer|dies|welch)(?:e|en|em|er|es)?|schlechten|heftigem)$/i;
+      testsTarget ||= preposition.test(answer) || question.test(answer) || (preposition.test(precedingWord) && ending.test(answer));
+      before += answer + parts[i + 1];
+    }
+    assert.ok(testsTarget, `${e.id}: a sentence containing a preposition is insufficient`);
+  }
+});
+
+test('a chapter label cannot reintroduce supplied-phrase puzzles into Prepositions', () => {
+  const original = importedBookItems.find(e => e.id === 'book-p121-e2-i7');
+  const puzzle = { ...original, kind: 'order', chunks: ['Herr Müller', 'kann', 'gegen seine Kopfschmerzen', 'nichts tun.'], orders: [[0, 1, 2, 3]] };
+  const audited = auditBookExercises(importedBookItems.map(e => e === original ? puzzle : e));
+  assert.ok(!audited.find(e => e.id === puzzle.id).focusedModes.includes('prepositions'));
 });

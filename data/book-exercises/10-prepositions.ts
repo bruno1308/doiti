@@ -1,4 +1,5 @@
 import { workbookChapter } from "./builder";
+import { prepositionGaps } from "./preposition-gaps";
 const d=workbookChapter("5.1–5.2","Dative and accusative prepositions","A1","Aus, bei, mit, nach, seit, von and zu take dative. Durch, für, gegen, ohne and um take accusative. Nach is used for most cities and countries; zu is used for people and many institutions.");
 const route=(page:number,task:string,prefix:string,rows:string)=>d.gaps(page,task,rows.split(";").map(row=>{const [answer,rest]=row.split("|");return `nach/zu/zum/zur/aus/von/vom/bei/beim/in/im|${prefix} {${answer}} ${rest}.`;}).join("\n"),"fill");
 route(119,"1a","Wir fahren","nach|München;zum~zu dem|Bahnhof;nach|Portugal;nach|rechts;zur~zu der|Polizei;zum~zu dem|Zahnarzt;nach|Hause;zu|Otto und Frieda;zur~zu der|Post;nach|Deutschland;zum~zu dem|Unterricht");
@@ -28,13 +29,15 @@ preposition|Die Vorlesung endet heute {um~gegen} zwölf Uhr.
 preposition|Ich will einen Spaziergang {durch} den Park machen.
 preposition|Herr Schmidt kommt erst {um~gegen} vierzehn Uhr zurück.
 preposition|{Ohne} deine Hilfe kann ich diese Aufgabe nicht lösen.`,"fill");
-d.order(121,"2",`Herr Müller|hat|bis nächste Woche|Urlaub.
-Herr Müller|ist|gegen ein Verkehrsschild|gefahren.
-Herr Müller|kann|ohne Computer|nicht leben.
-Herr Müller|hat|für seinen Sohn|einen Fußball gekauft.
-Herr Müller|ist|durch die ganze Stadt|gelaufen.
-Herr Müller|ist|um siebzehn Uhr in Frankfurt|angekommen.
-Herr Müller|kann|gegen seine Kopfschmerzen|nichts tun.`);
+prepositionGaps(d, 121, "2", [
+  ["bis/seit/ab/vor|Herr Müller hat {bis} nächste Woche Urlaub.", "Mr Müller is on holiday until next week.", "Distinguish the end of a time period from its starting point."],
+  ["gegen/an/über/durch|Herr Müller ist {gegen} {ein@ein/einen/einem/eines} Verkehrsschild gefahren.", "Mr Müller drove into a traffic sign, hitting it.", "A collision uses a preposition with accusative. Verkehrsschild is neuter."],
+  ["ohne/mit/für/gegen|Herr Müller kann {ohne} Computer nicht leben.", "Mr Müller cannot live without a computer.", "Choose the preposition expressing absence, rather than accompaniment or opposition."],
+  ["für/mit/von/bei|Herr Müller hat {für} {seinen@seinen/seinem/sein/seiner} Sohn einen Fußball gekauft.", "Mr Müller bought a football for his son.", "The intended recipient uses a preposition with accusative. Sohn is masculine; the owner is Mr Müller."],
+  ["durch/um/in/aus|Herr Müller ist {durch} {die@article:acc} ganze Stadt gelaufen.", "Mr Müller walked through the whole city.", "Distinguish movement through an area from movement around it. Stadt is feminine and the path preposition takes accusative."],
+  ["um/gegen/seit/bis|Herr Müller ist {um} siebzehn Uhr {in@in/nach/zu/aus} Frankfurt angekommen.", "Mr Müller arrived in Frankfurt at exactly five p.m.", "Distinguish an exact clock time from an approximate time. Ankommen describes arrival at a place, not a destination with fahren."],
+  ["gegen/für/mit/ohne|Herr Müller kann {gegen} {seine@seine/seinen/seinem/seiner} Kopfschmerzen nichts tun.", "Mr Müller can do nothing to counter his headaches.", "Counteracting a problem uses an accusative preposition. Kopfschmerzen is plural; choose the ending for his."],
+]);
 const t=workbookChapter("5.3","Two-way prepositions","A2","For location (wo), use dative. For a destination or changed position (wohin), use accusative. Time expressions with an, in, vor and zwischen take dative.");
 t.gaps(123,"1a",`article|Mizi ist in {dem@article:dat} Garten.
 article|Mizi ist hinter {der@article:dat} Gardine.
@@ -149,18 +152,20 @@ am/im/beim/zum|Wir könnten uns {am} Wochenende treffen, {am} Samstag oder {am} 
 preposition|Ich möchte einen Ausflug {mit} {einem@indefinite} Schiff {auf} {dem@article:dat} Rhein machen.
 preposition|Ich wollte auch {aus} der Stadt raus.
 am/im/beim/zum|Ich rufe dich {am} Freitag an.`,"fill");
-t.order(129,"10",`Die Schränke|sind|aus Holz.
-Tante Jutta|kommt|mit dem Auto|ohne ihren Hund.
-Martha|kauft|für ihren Sohn|eine Gitarre.
-Meiner Meinung nach|ist|der Abgabetermin für den Abschlussbericht|zu früh.
-Ohne Fleiß|können|wir|den Wettkampf nicht gewinnen.
-Das Fußballspiel|findet|unter schlechten Wetterbedingungen|statt.
-Aus Angst vor einer Verletzung|spielt|der Stürmer Franz Kaiser|nicht mit.
-Das ganze Gebäude|ist|aus Stahl und Glas.
-Ich|nehme|die alten Pfannen von meiner Oma|gerne zum Kochen.
-Bei heftigem Schnee|kann|man|die Bergstraße nicht befahren.
-Er|hilft|dir|nur aus Mitleid.
-Die Regierung|kämpft|jetzt|gegen das Rauchen.`);
+prepositionGaps(t, 129, "10", [
+  ["aus/von/mit/bei|Die Schränke sind {aus} Holz.", "The cupboards are made of wood.", "Choose the preposition for the material something is made of."],
+  ["mit/bei/von/aus|Tante Jutta kommt {mit} {dem@article:dat} Auto {ohne@ohne/mit/für/gegen} {ihren@ihren/ihrem/ihr/ihrer} Hund.", "Aunt Jutta is coming by car without her dog.", "The means of transport takes dative; absence takes accusative. Auto is neuter, Hund masculine."],
+  ["für/von/mit/bei|Martha kauft {für} {ihren@ihren/ihrem/ihr/ihrer} Sohn eine Gitarre.", "Martha is buying a guitar for her son.", "The intended recipient uses an accusative preposition. Sohn is masculine; the owner is Martha."],
+  ["nach/bei/mit/für|Meiner Meinung {nach} ist der Abgabetermin {für@für/von/mit/bei} {den@article:acc} Abschlussbericht zu früh.", "In my opinion, the deadline for the final report is too early.", "The opinion expression places its preposition after the dative noun phrase. The report takes accusative after the preposition expressing purpose."],
+  ["Ohne/Mit/Durch/Für|{Ohne} Fleiß können wir den Wettkampf nicht gewinnen.", "Without hard work we cannot win the competition.", "Choose the preposition expressing the absence of something necessary."],
+  ["unter/über/zwischen/gegen|Das Fußballspiel findet {unter} {schlechten@schlechten/schlechte/schlechtem/schlechter} Wetterbedingungen statt.", "The football match takes place under bad weather conditions.", "The expression for conditions uses dative here. Wetterbedingungen is plural and has no article."],
+  ["Aus/Von/Mit/Bei|{Aus} Angst {vor@vor/gegen/über/auf} {einer@einer/eine/einen/einem} Verletzung spielt der Stürmer Franz Kaiser nicht mit.", "Out of fear of an injury, the striker Franz Kaiser is not playing.", "Distinguish the motive from the thing feared. The complement of Angst uses a preposition with dative; Verletzung is feminine."],
+  ["aus/von/mit/bei|Das ganze Gebäude ist {aus} Stahl und Glas.", "The whole building is made of steel and glass.", "Use the preposition expressing what material something is made of."],
+  ["von/bei/mit/für|Ich nehme die alten Pfannen {von} {meiner@meiner/meine/meinen/meinem} Oma gerne {zum@zum/beim/vom/im} Kochen.", "I like using the old pans from my grandma for cooking.", "Origin takes dative. Oma is feminine. Distinguish purpose from an activity happening at the same time."],
+  ["Bei/Seit/Aus/Zu|{Bei} {heftigem@heftigem/heftigen/heftiger/heftiges} Schnee kann man die Bergstraße nicht befahren.", "In heavy snow, you cannot drive on the mountain road.", "The preposition for these circumstances takes dative. Schnee is masculine, with no article before its adjective."],
+  ["aus/von/mit/bei|Er hilft dir nur {aus} Mitleid.", "He helps you only out of pity.", "Choose the preposition expressing an emotional motive."],
+  ["gegen/für/mit/um|Die Regierung kämpft jetzt {gegen} {das@article:acc} Rauchen.", "The government is now fighting against smoking.", "Distinguish fighting against something from fighting for it. Opposition takes accusative; Rauchen is a neuter nominalized infinitive."],
+]);
 t.gaps(129,"11",`preposition|{In} Deutschland würden viele Mitarbeiter gerne {am@am/im/zum/beim} Arbeitsplatz einen Mittagsschlaf machen.
 preposition|Man kann die Konzentration {mit} einem kurzen Mittagsschlaf erhöhen.
 preposition|{Nach} einer Siesta erwacht man frisch.

@@ -1,4 +1,5 @@
 import { workbookChapter } from "./builder";
+import { prepositionGaps } from "./preposition-gaps";
 const c = workbookChapter("1.6", "Verb complements", "A1", "The verb determines the case: helfen, danken, gehören and gefallen take dative; besuchen, sehen and bezahlen take accusative. With two nouns, dative usually precedes accusative.");
 c.gaps(61, "1", `
 case|Otto kauft seiner Freundin einen Ring. „seiner Freundin“ steht im {Dativ}.
@@ -87,16 +88,16 @@ preposition|Bruno hat sich {in} die Sängerin Sandra verliebt.
 preposition|Er hat sich {mit} seiner Exfreundin Yvonne gestritten.
 preposition|Sein Manager wollte {mit} Bruno {über} die Beziehung zu Sandra reden.
 `, "fill");
-p.order(65, "3", `
-Wir|warten|schon lange|auf das Protokoll.
-Marion|telefoniert|täglich|mit ihrem Freund in Kanada.
-Georg|denkt|nur noch|an das Projekt.
-Max|interessiert sich|nur|für Fußball.
-Der Informatiker|denkt|über das Softwareproblem|nach.
-Bei der Sitzung|sprechen|wir|über die Arbeitszeiten.
-Die Verwaltungsleiterin|beschäftigt sich|heute|mit der Jahresendabrechnung.
-Wir|achten|besonders|auf die Sicherheit.
-`);
+prepositionGaps(p, 65, "3", [
+  ["auf/an/über/für|Wir warten schon lange {auf} {das@article:acc} Protokoll.", "We have been waiting a long time for the minutes.", "The verb for waiting requires a fixed preposition with accusative. Protokoll is neuter."],
+  ["mit/bei/über/an|Marion telefoniert täglich {mit} {ihrem@ihrem/ihren/ihre/ihrer} Freund in Kanada.", "Marion talks on the phone with her boyfriend in Canada every day.", "The person you telephone takes a preposition with dative. Freund is masculine; the owner is Marion."],
+  ["an/über/auf/für|Georg denkt nur noch {an} {das@article:acc} Projekt.", "Georg can think only of the project now.", "Thinking of something uses a fixed preposition with accusative. Projekt is neuter."],
+  ["für/an/über/auf|Max interessiert sich nur {für} Fußball.", "Max is interested only in football.", "Learn the fixed preposition for sich interessieren together with its accusative complement."],
+  ["über/an/auf/für|Der Informatiker denkt {über} {das@article:acc} Softwareproblem nach.", "The computer scientist is thinking about the software problem.", "Nachdenken uses a different preposition from denken an. Its complement takes accusative; Softwareproblem is neuter."],
+  ["über/mit/an/bei|Bei der Sitzung sprechen wir {über} {die@article:acc} Arbeitszeiten.", "At the meeting we talk about the working hours.", "Distinguish the topic of a conversation from the person you speak with. The topic takes accusative; Arbeitszeiten is plural."],
+  ["mit/über/an/für|Die Verwaltungsleiterin beschäftigt sich heute {mit} {der@article:dat} Jahresendabrechnung.", "The head of administration is dealing with the year-end accounts today.", "Sich beschäftigen requires a preposition with dative. Jahresendabrechnung is feminine."],
+  ["auf/an/über/für|Wir achten besonders {auf} {die@article:acc} Sicherheit.", "We pay particular attention to safety.", "Achten requires a fixed preposition with accusative. Sicherheit is feminine."],
+]);
 p.gaps(65, "4", `
 preposition|Maria beschwert sich ständig {bei} {dem@article:dat} Chef {über} {ihre@ending:ihr} Kollegen.
 preposition|Gustav freut sich nie {über~auf} {die@article:acc} neuen Projekte.

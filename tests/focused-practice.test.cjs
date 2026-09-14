@@ -60,6 +60,51 @@ test('all nineteen focused modes retain valid, complete activities with no dupli
   }
 });
 
+test('Separable Verbs tests the target verb, not the workbook section or incidental vocabulary', () => {
+  const overall = [...a1, ...a2];
+  const pool = focusedPractice.separable.pool;
+  const nonSeparable = [
+    ['book-p24-e4-i6', 'Present tense', 'brauche'], // Reported brauchen card.
+    ['book-p23-e1-i1', 'Present tense', 'bestelle'],
+    ['book-p23-e1-i5', 'Present tense', 'verliere'],
+    ['book-p23-e1-i8', 'Present tense', 'empfange'],
+    ['book-p23-e2-i1', 'Present tense', 'frühstückt'],
+    ['book-p24-e3-i9', 'Present tense', 'bezahlt'],
+    ['book-p24-e4-i5', 'Modal verbs', 'Können'], // Contains vorbeikommen, but tests können.
+    ['book-p24-e4-i8', 'Modal verbs', 'wollen'],
+    ['book-p33-e1-i4', 'Perfekt', 'bezahlt'],
+    ['book-p33-e1-i6', 'Perfekt', 'verkauft'],
+    ['book-p34-e1-i1', 'Perfekt', 'bestellt'],
+    ['book-p34-e3-i2', 'Perfekt', 'kontrolliert'],
+    ['book-p34-e3-i3', 'Perfekt', 'gelöst'],
+    ['book-p34-e3-i14', 'Perfekt', 'unterschrieben'],
+  ];
+  for (const [id, topic, verb] of nonSeparable) {
+    const exercise = overall.find(e => e.id === id);
+    assert.ok(exercise, `${verb}: keep the exercise and its saved progress key`);
+    assert.ok(solutionText(exercise).includes(verb), id);
+    assert.equal(exercise.topic, topic, id);
+    assert.ok(!pool.includes(exercise), `${verb} does not test a separable verb`);
+    if (topic === 'Perfekt') assert.ok(focusedPractice.perfekt.pool.includes(exercise), id);
+    if (topic === 'Modal verbs') assert.ok(focusedPractice.modals.pool.includes(exercise), id);
+  }
+  for (const [id, verb] of [
+    ['book-p23-e1-i2', 'fern'],
+    ['book-p23-e2-i6', 'ab'],
+    ['book-p24-e3-i10', 'herunter'],
+    ['book-p24-e4-i10', 'vorbei'],
+    ['book-p33-e1-i1', 'aufgeräumt'],
+    ['book-p34-e3-i10', 'vorbereitet'], // Separable even though its participle has no ge-.
+    ['book-p34-e3-i12', 'teilgenommen'],
+  ]) {
+    const exercise = overall.find(e => e.id === id);
+    assert.ok(pool.includes(exercise), `${verb}: retain actual separable-verb practice`);
+    assert.ok(solutionText(exercise).includes(verb), id);
+  }
+  assert.ok(pool.some(e => e.kind === 'order'));
+  assert.ok(pool.some(e => e.kind === 'conjugation'));
+});
+
 test('legacy questions keep their keys and shared workbook questions keep the same objects and progress across modes', () => {
   for (const mode of legacyModes) for (const [i, e] of legacyPractice[mode].entries()) {
     assert.equal(overallQuestionId(e), `${mode}:${i}`);

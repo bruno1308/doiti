@@ -18,6 +18,14 @@ const shortcuts = [
   { label: "Perfekt", route: "/perfekt", icon: "checkmark-done-outline" },
   { label: "Conditionals", route: "/conditionals", icon: "sparkles-outline" },
   { label: "Separable verbs", route: "/separable", icon: "cut-outline" },
+  { label: "Prepositions", route: "/prepositions", icon: "navigate-outline" },
+  { label: "Cases", route: "/cases", icon: "scan-outline" },
+  { label: "Präteritum", route: "/praeteritum", icon: "time-outline" },
+  { label: "Modal verbs", route: "/modals", icon: "chatbubble-outline" },
+  { label: "Pronouns", route: "/pronouns", icon: "person-outline" },
+  { label: "Adjective endings", route: "/adjectives", icon: "pencil-outline" },
+  { label: "Connecting sentences", route: "/connectors", icon: "git-branch-outline" },
+  { label: "Word pairs", route: "/word-pairs", icon: "link-outline" },
 ] as const;
 
 export default function HomeScreen() {
@@ -47,7 +55,7 @@ export default function HomeScreen() {
     <View style={styles.sectionRow}><Text accessibilityRole="header" style={styles.sectionTitle}>Quick focus</Text>
       <Pressable accessibilityRole="button" onPress={() => router.push("/topics")} style={styles.link}><Text style={styles.linkText}>All topics →</Text></Pressable>
     </View>
-    <View style={styles.shortcuts}>{shortcuts.map(item => <Pressable key={item.route} accessibilityRole="button" onPress={() => router.push(item.route as Href)}
+    <View style={styles.shortcuts}>{shortcuts.map(item => <Pressable key={item.route} accessibilityRole="button" accessibilityLabel={item.label} onPress={() => router.push(item.route as Href)}
       style={({ pressed }) => [styles.shortcut, pressed && styles.pressed]}>
       <Ionicons name={item.icon} size={19} color={colors.primary} /><Text style={styles.shortcutText}>{item.label}</Text>
     </Pressable>)}</View>

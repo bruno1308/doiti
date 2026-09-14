@@ -8,6 +8,10 @@ import { shuffled } from "../lib/overall-logic";
 import { getQuestionStats, recordPracticeAnswer, recordSession } from "../lib/stats";
 import type { QuestionStatsMap } from "../lib/types";
 import { colors, cardEdge } from "../constants/theme";
+import CelebrationOverlay from "./CelebrationOverlay";
+import ExerciseSummary from "./ExerciseSummary";
+import { ComboMeter, CorrectStamp } from "./CelebrationBits";
+import { comboStats, isComboMilestone } from "../lib/celebrations";
 
 const accent = colors.primary;
 type Attempt = { index: number; correct: boolean; answer: string };
@@ -98,7 +102,9 @@ export default function ConversationPractice() {
     scroll.current?.scrollTo({ y: 0, animated: false });
   };
   const completed = phase === "summary" ? (feedback === "correct" ? index + 1 : index) : index;
-  return <ScrollView ref={scroll} showsVerticalScrollIndicator={false} style={styles.screen} contentContainerStyle={styles.content}>
+  const combo = comboStats(attempts);
+  const firstTryCorrect = attempts.find(a => a.index === index)?.correct === true;
+  return <View style={styles.screen}><ScrollView ref={scroll} showsVerticalScrollIndicator={false} style={styles.screen} contentContainerStyle={styles.content}>
     {storageError && <Text accessibilityRole="alert" style={styles.error}>Progress could not be saved on this device. You can continue practising.</Text>}
     {phase === "menu" ? <>
       <Text style={styles.title}>Conversation</Text>
@@ -115,11 +121,9 @@ export default function ConversationPractice() {
       })}</View>
     </> : scenario && phase === "summary" ? <>
       <Text style={styles.eyebrow}>{scenario.title.toUpperCase()}</Text>
-      <Text style={styles.title}>{completed === scenario.turns.length ? "Conversation complete!" : "Practice saved"}</Text>
+      <ExerciseSummary correct={attempts.filter(a => a.correct).length} total={attempts.length} finished={completed === scenario.turns.length} bestStreak={combo.best} conversation />
       {completed === scenario.turns.length && <DialogueMessage speaker={scenario.partner} message={scenario.closing} />}
       <Text style={styles.description}>{completed} of {scenario.turns.length} objectives completed.</Text>
-      <Text style={styles.score}>{attempts.filter(a => a.correct).length} / {attempts.length}</Text>
-      <Text style={styles.help}>replies correct on the first try · corrections help you learn</Text>
       <Action title="Try this scenario again" onPress={() => start(scenario)} />
       <Action title="Choose another scenario" onPress={backToMenu} disabled={busy} secondary />
       {attempts.filter(a => !a.correct).map(attempt => <View key={attempt.index} style={styles.feedback}>
@@ -128,7 +132,7 @@ export default function ConversationPractice() {
         <Text style={styles.help}>{scenario.turns[attempt.index].explanation}</Text>
       </View>)}
     </> : scenario && turn && <>
-      <View style={styles.row}><Text style={styles.eyebrow}>{scenario.title.toUpperCase()}</Text><Text style={styles.help}>Objective {index + 1} of {scenario.turns.length}</Text></View>
+      <View style={styles.row}><Text style={styles.eyebrow}>{scenario.title.toUpperCase()}</Text><ComboMeter streak={combo.current} /><Text style={styles.help}>Objective {index + 1} of {scenario.turns.length}</Text></View>
       <View style={styles.track}><View style={[styles.progress, { width: `${index / scenario.turns.length * 100}%` }]} /></View>
       <Text style={styles.help}>{scenario.setting}</Text>
       {index > 0 && <Pressable accessibilityRole="button" onPress={() => setHistory(!history)} style={styles.link}><Text style={styles.help}>{history ? "Hide earlier replies" : `Earlier replies (${index})`}</Text></Pressable>}
@@ -162,7 +166,7 @@ export default function ConversationPractice() {
         <Action title="Show the correct reply" secondary onPress={() => { setAnswers(turn.slots.map(s => s.answer)); setFeedback("correct"); }} />
       </View>}
       {feedback === "correct" ? <>
-        <View accessibilityLiveRegion="polite" style={styles.feedback}><Text style={styles.success}>{attempts.find(a => a.index === index)?.correct ? "Reply sent!" : "Reply corrected — ready to continue"}</Text>
+        <View accessibilityLiveRegion="polite" style={styles.feedback}>{firstTryCorrect ? <CorrectStamp label="Reply sent!" /> : <Text style={styles.success}>Reply corrected — ready to continue</Text>}
           <Text style={styles.german}>{replyText(turn, answers)}</Text><Text style={styles.help}>{turn.explanation}</Text></View>
         <Action title={index === scenario.turns.length - 1 ? "Finish conversation" : "Continue conversation"} disabled={busy} onPress={() => index === scenario.turns.length - 1 ? finish() : prepare(scenario, index + 1)} />
       </> : <>
@@ -172,7 +176,9 @@ export default function ConversationPractice() {
       </>}
       <Pressable accessibilityRole="button" accessibilityState={{ disabled: busy }} onPress={attempts.length ? finish : backToMenu} disabled={busy} style={styles.endLink}><Text style={styles.help}>End conversation</Text></Pressable>
     </>}
-  </ScrollView>;
+  </ScrollView>
+    {phase === "playing" && feedback === "correct" && firstTryCorrect && isComboMilestone(combo.current) && <CelebrationOverlay key={turn?.id} streak={combo.current} />}
+  </View>;
 }
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background }, content: { padding: 16, paddingBottom: 24, gap: 12 },

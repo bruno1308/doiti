@@ -25,6 +25,13 @@ revisit any gap before checking. Conversation separates blue dialogue from
 amber objectives and keeps answer-revealing explanations behind a solved reply
 or an explicit reveal.
 
+Correct answers get a small checkmark stamp and paper burst. Session combos earn
+brief sticker rewards at 3, 5, and every further 5 correct answers in a row.
+Completed decks reveal a fanned-card reward with accuracy and best combo; perfect
+runs get a special badge. Early exits show saved progress instead. Conversation
+combos count first tries only. Effects never block the next card and respect the
+device's reduced-motion preference.
+
 <table>
   <tr>
     <td align="center"><img src="assets/images/gender-card.webp" alt="Der/Die/Das" width="80" /><br/><b>Der/Die/Das</b><br/>Learn noun genders</td>

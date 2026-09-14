@@ -14,6 +14,10 @@ import { getPracticePreferences } from "../lib/settings";
 import { selectPracticeSession } from "../lib/practice-preferences";
 import SentencePuzzle from "./SentencePuzzle";
 import MatchingPairs from "./MatchingPairs";
+import CelebrationOverlay from "./CelebrationOverlay";
+import ExerciseSummary from "./ExerciseSummary";
+import { ComboMeter, CorrectStamp } from "./CelebrationBits";
+import { comboStats, isComboMilestone } from "../lib/celebrations";
 
 type Attempt = { exercise: PracticeExercise; answer: string; correct: boolean };
 
@@ -161,6 +165,8 @@ export default function OverallPractice({ level = "A1", config }: { level?: Over
     scroll.current?.scrollTo({ y: 0, animated: false });
   };
   const correctCount = attempts.filter(a => a.correct).length;
+  const combo = comboStats(attempts);
+  const finished = session.length > 0 && attempts.length === session.length;
 
   return (
     <View style={styles.container}>
@@ -180,10 +186,8 @@ export default function OverallPractice({ level = "A1", config }: { level?: Over
           <Button title="Try again" onPress={start} accent={accent} disabled={busy} />
           <Button title="Back to decks" onPress={() => router.navigate("/")} accent={accent} secondary />
         </> : phase === "summary" ? <>
-          <Text style={styles.eyebrow}>{title.toUpperCase()} · SESSION COMPLETE</Text>
-          <Text style={styles.title}>{correctCount === attempts.length ? "Beautifully done!" : "A little better every time."}</Text>
-          <Text style={[styles.score, { color: accent }]}>{correctCount}<Text style={styles.scoreTotal}> / {attempts.length}</Text></Text>
-          <Text style={styles.subtitle}>correct answers · {Math.round(correctCount / Math.max(attempts.length, 1) * 100)}%</Text>
+          <Text style={styles.eyebrow}>{title.toUpperCase()} · {finished ? "SESSION COMPLETE" : "PRACTICE SAVED"}</Text>
+          <ExerciseSummary correct={correctCount} total={attempts.length} finished={finished} bestStreak={combo.best} />
           <Button title="Practice again" onPress={start} disabled={busy} accent={accent} />
           <Button title="Back to home" onPress={() => router.navigate("/")} accent={accent} secondary />
           {attempts.some(a => !a.correct) && <Text style={styles.sectionTitle}>Take another look</Text>}
@@ -194,7 +198,7 @@ export default function OverallPractice({ level = "A1", config }: { level?: Over
             <Text style={styles.description}>{a.exercise.explanation}</Text>
           </View>)}
         </> : exercise && <>
-          <View style={styles.progressRow}><Text style={styles.eyebrow}>CARD {index + 1} / {session.length}</Text><Text style={styles.help}>{correctCount} correct</Text></View>
+          <View style={styles.progressRow}><Text style={styles.eyebrow}>CARD {index + 1} / {session.length}</Text><View style={styles.scoreRow}><ComboMeter streak={combo.current} /><Text style={styles.help}>{correctCount} correct</Text></View></View>
           {index === 0 && session.length < sessionTarget && <Text style={styles.help}>{session.length} matching cards available · no repeats</Text>}
           <View style={styles.track}><View style={[styles.progress, { backgroundColor: accent, width: `${(attempts.length / session.length) * 100}%` }]} /></View>
           <View style={styles.progressRow}><Text style={[styles.topic, { color: accent }]}>{exercise.topic}</Text><Text style={styles.format}>{kindLabels[exercise.kind]}</Text></View>
@@ -237,7 +241,7 @@ export default function OverallPractice({ level = "A1", config }: { level?: Over
           {showTranslation && exercise.translation && <Text style={styles.translation}>{exercise.translation}</Text>}
           {result === null ? <Button title="Check answer" onPress={check} accent={accent} disabled={!canCheck || dragging} /> : <>
             <View accessibilityLiveRegion="polite" style={[styles.feedback, { borderColor: result ? colors.success : colors.error }]}>
-              <Text style={[styles.feedbackTitle, { color: result ? colors.success : colors.error }]}>{result ? "Correct!" : "Not quite — here’s the answer"}</Text>
+              {result ? <CorrectStamp /> : <Text style={[styles.feedbackTitle, { color: colors.error }]}>Not quite — here’s the answer</Text>}
               <Text style={styles.solution}>{solutionText(exercise)}</Text>
               <Text style={styles.description}>{exercise.explanation}</Text>
               {exercise.source && <Text style={styles.footer}>A-Grammatik · page {exercise.source.printedPage} · exercise {exercise.source.exercise.split("-")[0]} · adapted for practice</Text>}
@@ -247,6 +251,7 @@ export default function OverallPractice({ level = "A1", config }: { level?: Over
           <Pressable accessibilityRole="button" accessibilityState={{ disabled: busy }} onPress={finish} disabled={busy} style={styles.endLink}><Text style={styles.help}>End session</Text></Pressable>
         </>}
       </ScrollView>
+      {phase === "playing" && result && isComboMilestone(combo.current) && <CelebrationOverlay key={exercise.id} streak={combo.current} />}
     </View>
   );
 }
@@ -266,6 +271,7 @@ const styles = StyleSheet.create({
   button: { ...cardEdge, minHeight: 50, padding: 12, borderRadius: 14, justifyContent: "center", alignItems: "center" },
   buttonText: { fontSize: 16, fontWeight: "800" },
   progressRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" },
+  scoreRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   track: { backgroundColor: colors.surfaceLight, height: 5, borderRadius: 4, overflow: "hidden" },
   progress: { height: 5, borderRadius: 4 },
   topic: { fontSize: 14, fontWeight: "700" },

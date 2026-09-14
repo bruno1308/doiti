@@ -253,7 +253,7 @@ können|{Können} Sie das Zimmer für mich bitte reservieren?
 `);
 
 // This workbook section mixes separable verbs with ordinary present-tense
-// practice. Classify the actual task below, rather than inheriting its heading.
+// practice. reviewed-tasks.ts classifies each actual task, not its heading.
 const p = workbookChapter("1.1.2", "Present tense", "A1", "Match the present-tense verb form to the subject. In a statement, the conjugated verb takes second position.");
 p.gaps(23, "1", `
 bestellen|ich {bestelle}
@@ -317,24 +317,4 @@ versprechen|Aber ich {verspreche} keine Wunder.
 erwarten|Dann {erwarte} ich Sie am Donnerstag.
 wohnen|Wo {wohnen} Sie, Herr Beier?
 `);
-// Source item numbers are stable progress IDs. Only these reviewed tasks ask
-// learners to conjugate a separable verb or arrange its separated prefix.
-const separableItems: Record<string, number[]> = {
-  "23:1": [2, 3, 4, 6, 7, 9, 12, 13],
-  "23:2": [6, 10, 12],
-  "24:2": [1, 3, 4],
-  "24:3": [1, 2, 4, 5, 7, 10],
-  "24:4": [10],
-};
-for (const exercise of p.exercises) {
-  const source = exercise.source!;
-  if (separableItems[`${source.pdfPage}:${source.exercise}`]?.includes(Number(source.item))) {
-    exercise.topic = "Separable verbs";
-    exercise.explanation = "Conjugate the separable verb to match the subject. Its prefix separates in a main clause and follows the verb's complements.";
-  } else if (source.pdfPage === 24 && source.exercise === "4" && [5, 8].includes(Number(source.item))) {
-    // Vorbeikommen occurs in item 5, but the gap tests können, not separation.
-    exercise.topic = "Modal verbs";
-    exercise.explanation = "Conjugate the modal verb to match the subject. The other verb stays in the infinitive at the end of the main clause.";
-  }
-}
 export default [...c.exercises, ...m.exercises, ...p.exercises];

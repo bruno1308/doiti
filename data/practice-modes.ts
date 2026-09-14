@@ -21,7 +21,7 @@ export const practiceModes: { id: FocusedMode; title: string; subtitle: string; 
   { id: "reflexive", title: "Reflexive Verbs", subtitle: "Sich freuen, mich or mir, dich or dir", accent: "#884764", icon: "return-down-back-outline" },
   { id: "passive", title: "Passive Voice", subtitle: "Wird gemacht and wurde gebaut", accent: "#4c5683", icon: "swap-horizontal-outline" },
   { id: "comparisons", title: "Comparisons & Superlatives", subtitle: "Besser, am besten: connect pairs and build sentences", accent: "#855432", icon: "podium-outline" },
-  { id: "word-pairs", title: "Word Pairs", subtitle: "Connect opposites and similar meanings", accent: "#346456", icon: "link-outline" },
+  { id: "word-pairs", title: "Word Pairs", subtitle: "Opposites and similar meanings", accent: "#346456", icon: "link-outline" },
 ];
 
 export const allPracticeModes = [...practiceModes, { id: "conversation" as const, title: "Conversation", subtitle: "10 everyday scenarios · build your replies word by word", accent: "#34626b", icon: "chatbubbles-outline" }];

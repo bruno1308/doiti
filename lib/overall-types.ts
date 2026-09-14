@@ -1,3 +1,5 @@
+import type { FocusedMode } from "../data/practice-modes";
+
 export type OverallLevel = "A1" | "A2";
 export type OverallKind = "choice" | "fill" | "conjugation" | "order";
 export type BookSource = { pdfPage: number; printedPage: number; exercise: string; item: string };
@@ -16,6 +18,8 @@ export interface OverallBase {
   bookSection: string;
   source?: BookSource;
   additionalSources?: BookSource[];
+  /** Audited task targets; workbook chapter headings are not routing rules. */
+  focusedModes?: FocusedMode[];
 }
 
 export type OverallExercise = OverallBase & (

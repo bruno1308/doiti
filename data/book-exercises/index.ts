@@ -16,8 +16,9 @@ import complex from "./14-complex-sentences";
 import speaking from "./15-speaking-prompts";
 import visual from "./16-visual-prompts";
 import guided from "./17-guided-conversations";
+import { auditBookExercises } from "./audit";
 
-export const importedBookItems = [...present,...perfekt,...past,...verbs,...complements,...nouns,...articles,...pronouns,...adjectives,...prepositions,...wordOrder,...negation,...connectors,...complex,...speaking,...visual,...guided];
+export const importedBookItems = auditBookExercises([...present,...perfekt,...past,...verbs,...complements,...nouns,...articles,...pronouns,...adjectives,...prepositions,...wordOrder,...negation,...connectors,...complex,...speaking,...visual,...guided]);
 
 // Keep all source references while presenting repeated workbook questions once.
 // Including the prompt and answers avoids collapsing different questions that
@@ -28,7 +29,10 @@ for (const exercise of importedBookItems) {
     exercise.kind === "order" ? exercise.chunks : exercise.sentence,
     exercise.kind === "choice" ? exercise.answer : exercise.kind === "order" ? exercise.orders : exercise.blanks.map(b=>b.answers)]);
   const previous = unique.get(key);
-  if (previous && exercise.source) previous.additionalSources = [...(previous.additionalSources || []),exercise.source];
+  if (previous && exercise.source) {
+    previous.additionalSources = [...(previous.additionalSources || []),exercise.source];
+    previous.focusedModes = [...new Set([...(previous.focusedModes ?? []), ...(exercise.focusedModes ?? [])])];
+  }
   else unique.set(key,{...exercise});
 }
 export const bookExercises = [...unique.values()];

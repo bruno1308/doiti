@@ -13,7 +13,7 @@ const topics: Record<FocusedMode, string[]> = {
   cases: [],
   possessives: ["Possessives", "Possessive articles", "Possessive and indefinite pronouns"],
   articles: ["Articles", "Articles in context", "Noun cases", "Demonstrative and question articles"],
-  pronouns: ["Personal pronouns", "Question pronouns", "Someone, nothing, everyone", "Impersonal es"],
+  pronouns: ["Personal pronouns", "Impersonal es"],
   praeteritum: ["Präteritum", "Past modal verbs", "Present and past forms"],
   perfekt: ["Perfekt", "Perfekt with separable prefixes", "Perfekt word order"],
   plurals: ["Plurals", "Plural nouns", "Dative plural"],
@@ -22,13 +22,16 @@ const topics: Record<FocusedMode, string[]> = {
   conditionals: ["Polite requests and wishes", "Polite requests"],
   connectors: ["Connecting main clauses", "Connecting ideas", "Subordinate clauses", "Dass clauses", "Correcting a statement"],
   separable: ["Separable verbs", "Perfekt with separable prefixes"],
-  clauses: ["Relative clauses", "Relative pronouns", "Indirect questions", "Infinitive with zu", "Infinitives with zu"],
+  clauses: ["Relative clauses", "Relative pronouns", "Indirect questions"],
   reflexive: ["Reflexive verbs", "Reflexive pronouns", "Reflexive pronouns: accusative or dative"],
   passive: ["Passive voice"],
   comparisons: ["Comparison", "Comparisons and superlatives"],
   "word-pairs": [],
 };
 function include(mode: FocusedMode, e: OverallExercise) {
+  // Imported tasks are individually audited. Never route them by a chapter
+  // label, or silently opt new book content into a specialized practice deck.
+  if (e.source) return e.focusedModes?.includes(mode) ?? false;
   // These modes test a specific answer skill. A chapter label alone can also
   // include unrelated sentence puzzles or article-declension activities.
   if (mode === "cases") return e.kind === "choice" && ["Nominativ", "Akkusativ", "Dativ", "Genitiv"].includes(e.answer);

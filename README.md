@@ -240,6 +240,8 @@ comparisons, opposites, and similar meanings. Existing exercises and progress
 are preserved, and book-question progress is shared across modes.
 See [the focused practice rollout](docs/focused-practice.md) for coverage and controls.
 
+Workbook cards use an explicit task-level classification rather than their chapter headings. See the [book content audit](docs/book-content-audit.md) for the findings, per-deck counts, and rules for reviewing new imports.
+
 Conversation adds ten everyday scenarios with five objectives each. Build replies
 word by word using four choices per slot, correct mistakes, and follow the dialogue.
 See [Conversation practice](docs/conversation.md).

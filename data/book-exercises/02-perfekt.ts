@@ -160,19 +160,4 @@ part:teilnehmen|Otto hat an einer Besprechung {teilgenommen}.
 part:führen|Otto hat Gespräche mit Mitarbeitern {geführt}.
 part:unterschreiben|Otto hat einen Vertrag {unterschrieben}.
 `);
-// The source section also includes bezahlen, bestellen, lösen, -ieren verbs,
-// and other non-separable verbs. They belong in Perfekt, not Separable Verbs.
-const separableItems: Record<string, number[]> = {
-  "33:1": [1, 2, 3, 5],
-  "34:1": [2, 3, 4, 5, 6, 7],
-  "34:2": [1, 2, 3, 4],
-  "34:3": [1, 4, 6, 8, 10, 11, 12],
-};
-for (const exercise of p.exercises) {
-  const source = exercise.source!;
-  if (separableItems[`${source.pdfPage}:${source.exercise}`]?.includes(Number(source.item))) {
-    exercise.topic = "Perfekt with separable prefixes";
-    exercise.explanation = "Use a conjugated auxiliary and a past participle. A separable prefix usually precedes ge-. If the base verb already has an inseparable prefix, no ge- is added.";
-  }
-}
 export default [...c.exercises, ...p.exercises];

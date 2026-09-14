@@ -8,7 +8,7 @@ import type { OverallExercise, PracticeExercise } from "../lib/overall-types";
 
 const bank = [...a1, ...a2];
 const topics: Record<FocusedMode, string[]> = {
-  gender: ["Noun gender and compounds"],
+  gender: [],
   adjectives: ["Adjective endings", "Adjectives in three cases", "Adjectives"],
   cases: [],
   possessives: ["Possessives", "Possessive articles", "Possessive and indefinite pronouns"],
@@ -29,10 +29,11 @@ const topics: Record<FocusedMode, string[]> = {
   "word-pairs": [],
 };
 function include(mode: FocusedMode, e: OverallExercise) {
-  if (topics[mode].includes(e.topic)) return true;
+  // These modes test a specific answer skill. A chapter label alone can also
+  // include unrelated sentence puzzles or article-declension activities.
   if (mode === "cases") return e.kind === "choice" && ["Nominativ", "Akkusativ", "Dativ", "Genitiv"].includes(e.answer);
   if (mode === "gender") return e.kind === "choice" && e.optionGroup === "article:nom";
-  return false;
+  return topics[mode].includes(e.topic);
 }
 export interface PracticeConfig {
   mode: FocusedMode;

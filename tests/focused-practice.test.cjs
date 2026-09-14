@@ -12,6 +12,21 @@ const { checkOverallAnswer, connectPair, overallQuestionId, selectOverallExercis
 const a1 = require('../data/overall-a1.ts').default;
 const a2 = require('../data/overall-a2.ts').default;
 
+test('Der/Die/Das tests noun gender instead of importing every activity from a noun chapter', () => {
+  const pool = focusedPractice.gender.pool;
+  const misplacedPuzzle = [...a1, ...a2].find(e => e.id === 'book-p74-e10-i2');
+  assert.ok(misplacedPuzzle, 'the reported puzzle remains available in Overall practice');
+  assert.ok(!pool.includes(misplacedPuzzle), 'the electronic-book sentence puzzle is not a gender question');
+  assert.ok(pool.some(e => e.id === 'book-p71-e2-i1'), 'workbook noun-gender questions are retained');
+  assert.ok(pool.length >= legacyPractice.gender.length);
+  for (const e of pool) {
+    assert.equal(e.kind, 'choice', e.id);
+    assert.ok(['der', 'die', 'das'].includes(normalizeAnswer(e.answer)), e.id);
+    for (const article of ['der', 'die', 'das']) assert.ok(e.options.map(normalizeAnswer).includes(article), `${e.id}: missing ${article}`);
+    if (e.source) assert.equal(e.optionGroup, 'article:nom', e.id);
+  }
+});
+
 test('all nineteen focused modes retain valid, complete activities with no duplicate progress keys', () => {
   assert.equal(practiceModes.length, 19);
   for (const mode of practiceModes) {

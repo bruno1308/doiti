@@ -203,6 +203,7 @@ function loadStats(seed = {}) {
   const exports = {};
   vm.runInNewContext(source, { exports, require: name => {
     if (name === '../data/practice-modes') return require('../data/practice-modes.ts');
+    if (name === './activity') return require('../lib/activity.ts');
     assert.equal(name, '@react-native-async-storage/async-storage'); return storage;
   } });
   return { stats: exports, failNext: () => { fail = true; } };
@@ -242,4 +243,42 @@ test('a failed storage write does not block later saves', async () => {
   await assert.rejects(stats.recordAnswer('overall-a2', true));
   await stats.recordAnswer('overall-a2', true);
   assert.equal((await stats.getStats())['overall-a2'].totalCorrect, 1);
+});
+
+test('daily activity survives session-log rollover and new outcomes do not invent older answer history', async () => {
+  const date = new Date(2026, 0, 1, 12).toISOString();
+  const { stats } = loadStats({
+    doiti_stats: JSON.stringify({ gender: { totalAttempted: 5, totalCorrect: 4 }, sessions: [{ mode: 'gender', date, total: 5, correct: 4 }] }),
+    doiti_question_stats: JSON.stringify({ 'gender:0': { attempts: 10, correct: 9, lastSeen: date } }),
+  });
+  await stats.recordAnswer('gender', false);
+  for (let i = 0; i < 25; i++) await stats.recordSession({ mode: 'gender', date: new Date().toISOString(), total: 1, correct: 0 });
+  const saved = await stats.getStats();
+  const { localDay } = require('../lib/activity.ts');
+  assert.equal(saved.activity['2026-01-01'].attempts, 5);
+  assert.equal(saved.activity[localDay(new Date())].attempts, 1);
+  assert.equal(saved.sessions.length, 20);
+  await stats.recordQuestionAnswer('gender:0', false);
+  assert.deepEqual(Array.from((await stats.getQuestionStats())['gender:0'].recent), [false]);
+  for (const correct of [false, true, true, true, true]) await stats.recordQuestionAnswer('gender:0', correct);
+  assert.deepEqual(Array.from((await stats.getQuestionStats())['gender:0'].recent), [false, true, true, true, true]);
+  await stats.resetStats();
+  assert.equal(Object.keys((await stats.getStats()).activity).length, 0);
+});
+
+test('immediate progress reads wait for the whole answer and queued session', async () => {
+  const { stats } = loadStats();
+  let updates = 0;
+  const unsubscribe = stats.subscribeToProgress(() => updates++);
+  const answer = stats.recordPracticeAnswer('gender', 'gender:0', false);
+  const session = stats.recordSession({ mode: 'gender', date: new Date().toISOString(), total: 1, correct: 0 });
+  const [totals, questions] = await Promise.all([stats.getStats(), stats.getQuestionStats()]);
+  assert.equal(totals.gender.totalAttempted, 1);
+  assert.equal(totals.sessions[0].total, 1);
+  assert.equal(questions['gender:0'].recent[0], false);
+  await Promise.all([answer, session]);
+  assert.equal(updates, 2, 'visible progress is notified even when a session is saved after focus');
+  unsubscribe();
+  await stats.recordPracticeAnswer('gender', 'gender:1', true);
+  assert.equal(updates, 2);
 });

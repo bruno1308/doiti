@@ -68,6 +68,21 @@ group discussions are not automatically graded. The PDF, artwork and audio are
 not bundled into the app. See [the content notes](docs/overall-practice.md) and
 [page-by-page coverage](docs/book-coverage.md).
 
+## Progress
+
+The Progress tab (formerly History, still reachable at `/history`) includes a
+local Monday–Sunday activity trail, a suggested next grammar deck, three small
+milestones, and a collection of 20 skills. Review recommendations put specific
+missed cards first and respect the exercise types and length saved in Settings.
+Recent sessions remain available in a collapsible log.
+
+Explored counts unique answered cards. Familiar requires three recent correct
+attempts; older records use at least three attempts and 80% accuracy until enough
+new outcomes exist. Skill labels are practice signals, not proficiency grades.
+Shared workbook cards contribute to each relevant skill and count once in the
+collection totals. Daily activity is saved independently of the 20-session log;
+older activity is recovered only from dates present in that log.
+
 ## Getting Started
 
 ### Prerequisites

@@ -109,12 +109,14 @@ export interface ModeStats {
   totalCorrect: number;
 }
 
-export type AllStats = Record<ExerciseMode, ModeStats> & { sessions: SessionStats[] };
+export type DailyActivity = Record<string, { attempts: number; correct: number }>;
+export type AllStats = Record<ExerciseMode, ModeStats> & { sessions: SessionStats[]; activity?: DailyActivity };
 
 export interface QuestionRecord {
   attempts: number;
   correct: number;
   lastSeen: string; // ISO date
+  recent?: boolean[]; // Up to five real outcomes, oldest first; absent in older saves.
 }
 
 export type QuestionStatsMap = Record<string, QuestionRecord>;

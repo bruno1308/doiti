@@ -1,7 +1,7 @@
 import React, { useCallback, useRef, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import a1Exercises from "../data/overall-a1";
 import a2Exercises from "../data/overall-a2";
@@ -9,7 +9,7 @@ import { colors, spacing, cardEdge } from "../constants/theme";
 import type { PracticeExercise, OverallLevel } from "../lib/overall-types";
 import type { PracticeConfig } from "../data/focused-practice";
 import { checkOverallAnswer, kindLabels, overallQuestionId, shuffled, solutionText } from "../lib/overall-logic";
-import { getQuestionStats, recordAnswer, recordQuestionAnswer, recordSession } from "../lib/stats";
+import { getQuestionStats, recordPracticeAnswer, recordSession } from "../lib/stats";
 import { getPracticePreferences } from "../lib/settings";
 import { selectPracticeSession } from "../lib/practice-preferences";
 import SentencePuzzle from "./SentencePuzzle";
@@ -26,6 +26,7 @@ function Button({ title, onPress, accent, disabled = false, secondary = false }:
 
 export default function OverallPractice({ level = "A1", config }: { level?: OverallLevel; config?: PracticeConfig }) {
   const router = useRouter();
+  const { focus } = useLocalSearchParams<{ focus?: string }>();
   const mode = config?.mode ?? (level === "A1" ? "overall-a1" : "overall-a2");
   const allExercises: PracticeExercise[] = config?.pool ?? (level === "A1" ? a1Exercises : a2Exercises);
   const title = config?.title ?? `Overall ${level}`;
@@ -53,7 +54,9 @@ export default function OverallPractice({ level = "A1", config }: { level?: Over
   const writes = useRef(Promise.resolve());
 
   const enqueue = useCallback((write: () => Promise<void>) => {
-    writes.current = writes.current.then(write).catch(() => { setStorageError(true); });
+    // The storage layer serializes writes. Register now so a newly focused
+    // Progress screen can wait for this operation, including session saves.
+    writes.current = Promise.all([writes.current, write()]).then(() => {}).catch(() => { setStorageError(true); });
   }, []);
   const saveSession = useCallback(() => {
     const completed = attemptRef.current;
@@ -85,7 +88,7 @@ export default function OverallPractice({ level = "A1", config }: { level?: Over
       await writes.current;
       const [stats, preferences] = await Promise.all([getQuestionStats(), getPracticePreferences()]);
       if (generation !== focusGeneration.current) return;
-      const next = selectPracticeSession(allExercises, preferences, stats);
+      const next = selectPracticeSession(allExercises, preferences, stats, focus === "review");
       setSessionTarget(preferences.count);
       if (!next.length) { setPhase("empty"); return; }
       setSession(next);
@@ -99,7 +102,7 @@ export default function OverallPractice({ level = "A1", config }: { level?: Over
     } finally {
       if (generation === focusGeneration.current) { setBusy(false); busyRef.current = false; }
     }
-  }, [allExercises, prepare]);
+  }, [allExercises, prepare, focus]);
 
   useFocusEffect(useCallback(() => {
     focusGeneration.current++;
@@ -123,7 +126,7 @@ export default function OverallPractice({ level = "A1", config }: { level?: Over
     attemptRef.current.push(attempt);
     setAttempts([...attemptRef.current]);
     setResult(correct);
-    enqueue(async () => { await recordAnswer(mode, correct); await recordQuestionAnswer(overallQuestionId(exercise), correct); });
+    enqueue(() => recordPracticeAnswer(mode, overallQuestionId(exercise), correct));
   };
   const next = async () => {
     if (busyRef.current || !answered.current) return;

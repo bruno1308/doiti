@@ -5,7 +5,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { conversations } from "../data/conversations";
 import { checkReply, conversationKey, nextEmptySlot, replyText, type ConversationScenario } from "../lib/conversation";
 import { shuffled } from "../lib/overall-logic";
-import { getQuestionStats, recordAnswer, recordQuestionAnswer, recordSession } from "../lib/stats";
+import { getQuestionStats, recordPracticeAnswer, recordSession } from "../lib/stats";
 import type { QuestionStatsMap } from "../lib/types";
 import { colors, cardEdge } from "../constants/theme";
 
@@ -46,7 +46,7 @@ export default function ConversationPractice() {
   const leaving = useRef(false);
   const scroll = useRef<ScrollView>(null);
   const enqueue = useCallback((operation: () => Promise<void>) => {
-    writes.current = writes.current.then(operation).catch(() => setStorageError(true));
+    writes.current = Promise.all([writes.current, operation()]).then(() => {}).catch(() => setStorageError(true));
   }, []);
   const saveSession = useCallback(() => {
     const completed = records.current;
@@ -77,7 +77,7 @@ export default function ConversationPractice() {
     recorded.current = true;
     const attempt = { index, correct, answer: replyText(turn, answers) };
     records.current.push(attempt); setAttempts([...records.current]);
-    enqueue(async () => { await recordAnswer("conversation", correct); await recordQuestionAnswer(conversationKey(scenario, turn), correct); });
+    enqueue(() => recordPracticeAnswer("conversation", conversationKey(scenario, turn), correct));
   };
   const send = () => {
     if (!turn || answers.some(answer => !answer) || feedback === "correct") return;

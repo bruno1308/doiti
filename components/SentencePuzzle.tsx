@@ -1,6 +1,6 @@
 import React, { useRef, useState } from "react";
 import { PanResponder, Platform, Pressable, StyleSheet, Text, View } from "react-native";
-import { colors, spacing } from "../constants/theme";
+import { colors, spacing, cardEdge } from "../constants/theme";
 import { placeChunk, shuffled } from "../lib/overall-logic";
 
 type Point = { x: number; y: number };
@@ -119,12 +119,12 @@ export default function SentencePuzzle({ chunks, slots, onChange, disabled, acce
         ))}
       </View>
       <Text style={styles.preview}>{slots.map(chunk => chunk === null ? "___" : chunks[chunk]).join(" ")}</Text>
-      <View ref={bank} onLayout={measure} style={[styles.bank, hover === "bank" && { borderColor: accent }]}>
+      <View ref={bank} onLayout={measure} style={[styles.bank, slots.every(s => s !== null) && styles.emptyBank, hover === "bank" && { borderColor: accent }]}>
         <Text style={styles.label}>SENTENCE PIECES</Text>
         <View style={styles.bankPieces}>{bankOrder.filter(i => !slots.includes(i)).map(i => <View key={i}>{piece(i, false)}</View>)}</View>
-        {slots.every(s => s !== null) && <Text style={styles.help}>All pieces placed. Drag to swap them, or check your answer.</Text>}
+        {slots.every(s => s !== null) && <Text style={styles.help}>Drop a piece here to remove it.</Text>}
       </View>
-      <Text style={styles.help}>Drag pieces into the slots. Swap two pieces by dropping one onto the other. Drag back here to remove, or tap a piece to move it.</Text>
+      {slots.some(s => s === null) && <Text style={styles.help}>Drag or tap to place. Drop onto another piece to swap; return to the tray to remove.</Text>}
       {!disabled && <Pressable accessibilityRole="button" onPress={() => { onChange(chunks.map((_, i) => i === 0 ? 0 : null)); setActiveSlot(null); }} style={styles.reset}><Text style={{ color: accent }}>Reset puzzle</Text></Pressable>}
       {drag && <View pointerEvents="none" style={[styles.ghost, { borderColor: accent, left: drag.point.x - bounds.current.root.x - 65, top: drag.point.y - bounds.current.root.y - 28 }]}><Text style={styles.pieceText}>{chunks[drag.chunk]}</Text></View>}
     </View>
@@ -135,21 +135,22 @@ const styles = StyleSheet.create({
   board: { gap: spacing.md, position: "relative" },
   label: { fontSize: 11, fontWeight: "800", letterSpacing: 1.5, color: colors.textSecondary },
   slots: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
-  slot: { flexGrow: 1, minWidth: 90, maxWidth: "100%", minHeight: 82, borderWidth: 1, borderStyle: "dashed", borderColor: colors.border, borderRadius: 12, padding: 6, justifyContent: "center" },
+  slot: { flexGrow: 1, minWidth: 90, maxWidth: "100%", minHeight: 68, borderWidth: 1, borderStyle: "dashed", borderColor: colors.border, borderRadius: 12, padding: 6, justifyContent: "center" },
   fixed: { borderStyle: "solid", backgroundColor: colors.surface },
   slotNumber: { color: colors.textSecondary, fontSize: 10, marginBottom: 4, marginLeft: 4 },
   fixedText: { color: colors.text, fontSize: 17, padding: 8, fontWeight: "600" },
   emptySlot: { flex: 1, minHeight: 44, alignItems: "center", justifyContent: "center" },
   emptyText: { color: colors.textSecondary, fontSize: 13 },
-  bank: { padding: spacing.md, borderRadius: 16, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, minHeight: 116, gap: spacing.md },
+  bank: { ...cardEdge, padding: 12, borderRadius: 16, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, minHeight: 88, gap: 10 },
+  emptyBank: { minHeight: 56, gap: 4, padding: 10 },
   bankPieces: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
   pieceWrapper: { maxWidth: "100%" },
-  piece: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#26364b", borderWidth: 1, borderRadius: 9, padding: 10, minHeight: 46, maxWidth: "100%" },
+  piece: { ...cardEdge, flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: colors.green, borderWidth: 1, borderRadius: 9, padding: 10, minHeight: 46, maxWidth: "100%" },
   pieceText: { color: colors.text, fontSize: 17, fontWeight: "500", flexShrink: 1 },
   grip: { color: colors.textSecondary, fontSize: 18 },
   dimmed: { opacity: 0.4 },
   preview: { color: colors.textSecondary, fontSize: 16, lineHeight: 24 },
   help: { color: colors.textSecondary, fontSize: 13, lineHeight: 20 },
   reset: { alignSelf: "flex-start", paddingVertical: 12, paddingHorizontal: 4 },
-  ghost: { position: "absolute", zIndex: 100, elevation: 12, backgroundColor: "#26364b", borderWidth: 2, borderRadius: 10, padding: 14, maxWidth: 270, shadowColor: "#000", shadowOpacity: 0.3, shadowRadius: 10, shadowOffset: { width: 0, height: 5 } },
+  ghost: { position: "absolute", zIndex: 100, elevation: 12, backgroundColor: colors.green, borderWidth: 2, borderRadius: 10, padding: 14, maxWidth: 270, shadowColor: "#000", shadowOpacity: 0.3, shadowRadius: 10, shadowOffset: { width: 0, height: 5 } },
 });

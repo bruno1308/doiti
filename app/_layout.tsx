@@ -1,5 +1,6 @@
 import { Platform, StyleSheet, View } from "react-native";
 import { Stack } from "expo-router";
+import { colors } from "../constants/theme";
 import InstallApp from "../components/InstallApp";
 
 export default function RootLayout() {
@@ -21,7 +22,7 @@ const styles = StyleSheet.create({
   webContainer: {
     flex: 1,
     alignItems: "center",
-    backgroundColor: "#0a0f1a",
+    backgroundColor: colors.background,
   },
   appShell: {
     flex: 1,

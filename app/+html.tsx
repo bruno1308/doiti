@@ -11,7 +11,7 @@ export default function RootHtml({ children }: PropsWithChildren) {
       <meta charSet="utf-8" />
       <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
       <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
-      <meta name="theme-color" content="#0f172a" />
+      <meta name="theme-color" content="#f2efe6" />
       <meta name="description" content="Practise German with sentence puzzles, everyday conversations and A1/A2 grammar exercises." />
       <link rel="manifest" href={`${publicRoot}manifest.webmanifest`} />
       <link rel="apple-touch-icon" sizes="180x180" href={`${publicRoot}icons/apple-touch-icon.png`} />

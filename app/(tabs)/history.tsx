@@ -4,7 +4,7 @@ import { View, Text, StyleSheet, ScrollView } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { getStats } from "../../lib/stats";
 import { AllStats } from "../../lib/types";
-import { colors, spacing } from "../../constants/theme";
+import { colors, spacing, cardEdge } from "../../constants/theme";
 
 
 
@@ -101,7 +101,10 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    paddingTop: 80,
+    padding: 24,
+    backgroundColor: colors.surface,
+    borderRadius: 18,
+    ...cardEdge,
   },
   emptyText: {
     fontSize: 20,
@@ -115,8 +118,9 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   sessionRow: {
+    ...cardEdge,
     backgroundColor: colors.surface,
-    borderRadius: 10,
+    borderRadius: 14,
     padding: spacing.md,
     marginBottom: spacing.sm,
     flexDirection: "row",

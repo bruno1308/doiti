@@ -16,6 +16,15 @@
 
 ## Practice Modes
 
+The compact **Pocket Decks** menu opens Overall A1, Overall A2, Conversation,
+and a filterable library of all 19 grammar modes. Quick focus shortcuts jump
+straight to common topics. Warm paper cards and raised answer buttons carry
+through every activity, setup screen, and session summary. Multi-gap cards show
+four choices for the active gap, advance to the next empty gap, and let you
+revisit any gap before checking. Conversation separates blue dialogue from
+amber objectives and keeps answer-revealing explanations behind a solved reply
+or an explicit reveal.
+
 <table>
   <tr>
     <td align="center"><img src="assets/images/gender-card.webp" alt="Der/Die/Das" width="80" /><br/><b>Der/Die/Das</b><br/>Learn noun genders</td>

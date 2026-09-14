@@ -7,13 +7,13 @@ import { checkReply, conversationKey, nextEmptySlot, replyText, type Conversatio
 import { shuffled } from "../lib/overall-logic";
 import { getQuestionStats, recordAnswer, recordQuestionAnswer, recordSession } from "../lib/stats";
 import type { QuestionStatsMap } from "../lib/types";
-import { colors } from "../constants/theme";
+import { colors, cardEdge } from "../constants/theme";
 
-const accent = "#67e8f9";
+const accent = colors.primary;
 type Attempt = { index: number; correct: boolean; answer: string };
 function DialogueMessage({ speaker, message, outgoing = false }: { speaker: string; message: string; outgoing?: boolean }) {
   return <View style={[styles.dialogue, outgoing && styles.outgoingDialogue]}>
-    {!outgoing && <View style={styles.avatar}><Ionicons name="person" size={18} color="#bdd7fb" accessible={false} /></View>}
+    {!outgoing && <View style={styles.avatar}><Ionicons name="person" size={18} color="#34576b" accessible={false} /></View>}
     <View style={[styles.messageBody, outgoing && styles.outgoingBody]}>
       <Text style={[styles.personName, outgoing && styles.outgoingName]}>{speaker}</Text>
       <View style={[styles.bubble, outgoing && styles.yourBubble]}><Text style={styles.dialogueText}>{message}</Text></View>
@@ -23,7 +23,7 @@ function DialogueMessage({ speaker, message, outgoing = false }: { speaker: stri
 function Action({ title, onPress, disabled = false, secondary = false }: { title: string; onPress: () => void; disabled?: boolean; secondary?: boolean }) {
   return <Pressable accessibilityRole="button" accessibilityState={{ disabled }} disabled={disabled} onPress={onPress}
     style={[styles.action, { backgroundColor: secondary ? colors.surface : accent }, disabled && { opacity: 0.4 }]}>
-    <Text style={{ color: secondary ? colors.text : colors.background, fontSize: 16, fontWeight: "700" }}>{title}</Text>
+    <Text style={{ color: secondary ? colors.text : colors.onPrimary, fontSize: 16, fontWeight: "700" }}>{title}</Text>
   </Pressable>;
 }
 export default function ConversationPractice() {
@@ -98,22 +98,21 @@ export default function ConversationPractice() {
     scroll.current?.scrollTo({ y: 0, animated: false });
   };
   const completed = phase === "summary" ? (feedback === "correct" ? index + 1 : index) : index;
-  return <ScrollView ref={scroll} style={styles.screen} contentContainerStyle={styles.content}>
+  return <ScrollView ref={scroll} showsVerticalScrollIndicator={false} style={styles.screen} contentContainerStyle={styles.content}>
     {storageError && <Text accessibilityRole="alert" style={styles.error}>Progress could not be saved on this device. You can continue practising.</Text>}
     {phase === "menu" ? <>
-      <Text style={styles.eyebrow}>EVERYDAY GERMAN</Text>
       <Text style={styles.title}>Conversation</Text>
-      <Text style={styles.description}>Choose a situation. Build each reply one word at a time, using four choices per slot.</Text>
+      <Text style={styles.description}>Choose a scene. Build your reply, one word at a time.</Text>
       <Text style={styles.help}>10 scenarios · 5 objectives each · no typing</Text>
-      {conversations.map(item => {
+      <View style={styles.scenarioGrid}>{conversations.map(item => {
         const tried = item.turns.filter(t => stats[conversationKey(item, t)]?.attempts).length;
         return <Pressable accessibilityRole="button" accessibilityLabel={`Start ${item.title}`} key={item.id} onPress={() => start(item)} style={styles.scenario}>
           <Ionicons name={item.icon as React.ComponentProps<typeof Ionicons>["name"]} size={27} color={accent} />
-          <View style={{ flex: 1, gap: 5 }}><Text style={styles.scenarioTitle}>{item.title}</Text><Text style={styles.help}>{item.setting}</Text>
+          <View style={{ gap: 5 }}><Text style={styles.scenarioTitle}>{item.title}</Text>
             <Text style={styles.eyebrow}>{item.level} · 5 objectives{tried ? ` · ${tried}/5 tried` : ""}</Text></View>
-          <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+
         </Pressable>;
-      })}
+      })}</View>
     </> : scenario && phase === "summary" ? <>
       <Text style={styles.eyebrow}>{scenario.title.toUpperCase()}</Text>
       <Text style={styles.title}>{completed === scenario.turns.length ? "Conversation complete!" : "Practice saved"}</Text>
@@ -140,15 +139,15 @@ export default function ConversationPractice() {
       <DialogueMessage speaker={scenario.partner} message={turn.speaker} />
       <View style={styles.replySection}>
         <View style={styles.objective}>
-          <View style={styles.objectiveHeading}><Ionicons name="flag-outline" size={16} color="#f5cd80" accessible={false} /><Text accessibilityRole="header" style={styles.objectiveLabel}>YOUR OBJECTIVE</Text></View>
+          <View style={styles.objectiveHeading}><Ionicons name="flag-outline" size={16} color={colors.goalText} accessible={false} /><Text accessibilityRole="header" style={styles.objectiveLabel}>YOUR OBJECTIVE</Text></View>
           <Text style={styles.objectiveText}>{turn.objective}</Text>
         </View>
         <View style={styles.composer}>
         <Text style={styles.speaker}>YOUR REPLY</Text>
         <View style={styles.slots}>{turn.slots.map((slot, i) => <Pressable key={i} accessibilityRole="button" accessibilityLabel={`Reply slot ${i + 1}: ${answers[i] || "empty"}`}
           accessibilityState={{ selected: active === i, disabled: feedback === "correct" }} disabled={feedback === "correct"} onPress={() => setActive(i)}
-          style={[styles.slot, active === i && { borderColor: accent, backgroundColor: "#26364b" }, feedback === "wrong" && answers[i] !== slot.answer && { borderColor: colors.error }]}>
-          <Text style={styles.slotNumber}>{i + 1}</Text><Text style={styles.word}>{answers[i] || "___"}</Text>
+          style={[styles.slot, active === i && { borderColor: accent, backgroundColor: colors.surfaceLight }, feedback === "wrong" && answers[i] !== slot.answer && { borderColor: colors.error }]}>
+          <Text style={styles.slotNumber}>{i + 1}</Text><Text style={styles.word}>{answers[i] || "…"}</Text>
         </Pressable>)}<Text style={styles.german}>{turn.punctuation}</Text></View>
         {feedback !== "correct" && <>
           <Text accessibilityLiveRegion="polite" style={styles.help}>Choose word {active + 1} of {turn.slots.length} · tap a slot to change it</Text>
@@ -171,34 +170,36 @@ export default function ConversationPractice() {
         <Pressable accessibilityRole="button" onPress={() => setHint(!hint)} style={styles.link}><Text style={styles.help}>{hint ? "Hide hint" : "Show a hint"}</Text></Pressable>
         {hint && <Text style={styles.help}>{turn.hint}</Text>}
       </>}
-      <Action title="End conversation" onPress={attempts.length ? finish : backToMenu} disabled={busy} secondary />
+      <Pressable accessibilityRole="button" accessibilityState={{ disabled: busy }} onPress={attempts.length ? finish : backToMenu} disabled={busy} style={styles.endLink}><Text style={styles.help}>End conversation</Text></Pressable>
     </>}
   </ScrollView>;
 }
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.background }, content: { padding: 20, paddingBottom: 48, gap: 16 },
-  title: { color: colors.text, fontSize: 30, fontWeight: "800" }, description: { color: colors.text, fontSize: 17, lineHeight: 25 },
+  screen: { flex: 1, backgroundColor: colors.background }, content: { padding: 16, paddingBottom: 24, gap: 12 },
+  title: { color: colors.text, fontSize: 26, fontWeight: "800" }, description: { color: colors.text, fontSize: 17, lineHeight: 25 },
   eyebrow: { color: colors.textSecondary, fontSize: 11, fontWeight: "700", letterSpacing: 1 }, help: { color: colors.textSecondary, fontSize: 14, lineHeight: 21 },
-  scenario: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: colors.surface, padding: 18, borderRadius: 16, borderWidth: 1, borderColor: colors.border },
-  scenarioTitle: { color: colors.text, fontSize: 19, fontWeight: "700" }, row: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", gap: 8 },
+  scenarioGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
+  scenario: { ...cardEdge, flexBasis: "46%", flexGrow: 1, gap: 10, backgroundColor: colors.surface, padding: 12, borderRadius: 16 },
+  scenarioTitle: { color: colors.text, fontSize: 16, fontWeight: "700" }, row: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", gap: 8 },
   track: { height: 5, backgroundColor: colors.surfaceLight, borderRadius: 4 }, progress: { height: 5, backgroundColor: accent, borderRadius: 4 },
-  dialogue: { flexDirection: "row", alignItems: "flex-start", gap: 10, marginVertical: 6 },
-  avatar: { width: 34, height: 34, borderRadius: 17, backgroundColor: "#294260", alignItems: "center", justifyContent: "center" },
-  messageBody: { flex: 1, minWidth: 0, gap: 8 }, personName: { color: "#aec5e1", fontSize: 13, fontWeight: "500", paddingTop: 7, paddingLeft: 2 },
-  bubble: { backgroundColor: "#1b304a", borderWidth: 1, borderColor: "#2e4968", borderRadius: 20, borderTopLeftRadius: 4, padding: 16 },
-  dialogueText: { color: "#f1f6ff", fontSize: 22, lineHeight: 31, fontWeight: "400" },
+  dialogue: { flexDirection: "row", alignItems: "flex-start", gap: 8, marginVertical: 2 },
+  avatar: { width: 34, height: 34, borderRadius: 17, backgroundColor: colors.blue, alignItems: "center", justifyContent: "center" },
+  messageBody: { flex: 1, minWidth: 0, gap: 5 }, personName: { color: "#34576b", fontSize: 13, fontWeight: "500", paddingTop: 7, paddingLeft: 2 },
+  bubble: { backgroundColor: colors.blue, borderWidth: 1, borderColor: "#a9c1ce", borderRadius: 20, borderTopLeftRadius: 4, padding: 13 },
+  dialogueText: { color: "#2b4352", fontSize: 21, lineHeight: 29, fontWeight: "400" },
   outgoingDialogue: { justifyContent: "flex-end" }, outgoingBody: { flex: 0, flexShrink: 1, maxWidth: "88%" }, outgoingName: { color: accent, textAlign: "right" },
-  yourBubble: { backgroundColor: "#203d48", borderColor: "#365861", borderTopLeftRadius: 20, borderTopRightRadius: 4 },
+  yourBubble: { backgroundColor: colors.green, borderColor: "#aabf85", borderTopLeftRadius: 20, borderTopRightRadius: 4 },
   speaker: { fontSize: 12, color: accent, fontWeight: "700" }, german: { color: colors.text, fontSize: 19, lineHeight: 28 },
-  replySection: { borderTopWidth: 1, borderTopColor: "#29364b", paddingTop: 20, gap: 20 },
-  objective: { borderLeftWidth: 3, borderLeftColor: "#e3b45f", borderRadius: 8, padding: 14, backgroundColor: "#30291e", gap: 7 },
-  objectiveHeading: { flexDirection: "row", alignItems: "center", gap: 8 }, objectiveLabel: { color: "#f5cd80", fontSize: 11, fontWeight: "800", letterSpacing: 1.2 },
-  objectiveText: { color: "#f6e8cd", fontSize: 16, lineHeight: 24, fontWeight: "500" },
-  composer: { gap: 14 }, slots: { flexDirection: "row", flexWrap: "wrap", gap: 8, alignItems: "center" },
-  slot: { borderWidth: 2, borderColor: colors.border, backgroundColor: colors.surface, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, minWidth: 64, minHeight: 60, maxWidth: "100%" },
+  replySection: { borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 12, gap: 12 },
+  objective: { borderLeftWidth: 3, borderLeftColor: "#b28c38", borderRadius: 8, padding: 12, backgroundColor: colors.goal, gap: 6 },
+  objectiveHeading: { flexDirection: "row", alignItems: "center", gap: 8 }, objectiveLabel: { color: colors.goalText, fontSize: 11, fontWeight: "800", letterSpacing: 1.2 },
+  objectiveText: { color: colors.goalText, fontSize: 15, lineHeight: 22, fontWeight: "500" },
+  composer: { gap: 10 }, slots: { flexDirection: "row", flexWrap: "wrap", gap: 8, alignItems: "center" },
+  slot: { ...cardEdge, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, paddingHorizontal: 8, paddingVertical: 8, borderRadius: 10, minWidth: 48, minHeight: 52, maxWidth: "100%" },
   slotNumber: { color: colors.textSecondary, fontSize: 10, marginBottom: 4 }, word: { color: colors.text, fontSize: 18, flexShrink: 1 },
-  options: { flexDirection: "row", flexWrap: "wrap", gap: 10 }, option: { flexBasis: "45%", flexGrow: 1, minHeight: 54, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, borderRadius: 12, padding: 12, justifyContent: "center", alignItems: "center" },
-  action: { minHeight: 52, padding: 14, borderRadius: 12, alignItems: "center", justifyContent: "center" },
-  link: { minHeight: 44, justifyContent: "center", alignSelf: "flex-start" }, feedback: { padding: 16, borderRadius: 14, backgroundColor: colors.surface, gap: 10 },
-  error: { color: "#fca5a5", fontSize: 15, lineHeight: 22 }, success: { color: colors.success, fontWeight: "700", fontSize: 17 }, score: { color: accent, fontSize: 46, fontWeight: "800" },
+  options: { flexDirection: "row", flexWrap: "wrap", gap: 10 }, option: { ...cardEdge, flexBasis: "45%", flexGrow: 1, minHeight: 54, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, borderRadius: 12, padding: 12, justifyContent: "center", alignItems: "center" },
+  action: { ...cardEdge, minHeight: 50, padding: 14, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  endLink: { minHeight: 44, alignItems: "center", justifyContent: "center" },
+  link: { minHeight: 44, justifyContent: "center", alignSelf: "flex-start" }, feedback: { ...cardEdge, padding: 14, borderRadius: 14, backgroundColor: colors.surface, gap: 10 },
+  error: { color: colors.error, fontSize: 15, lineHeight: 22 }, success: { color: colors.success, fontWeight: "700", fontSize: 17 }, score: { color: accent, fontSize: 46, fontWeight: "800" },
 });

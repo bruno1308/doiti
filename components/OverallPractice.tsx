@@ -5,7 +5,7 @@ import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import a1Exercises from "../data/overall-a1";
 import a2Exercises from "../data/overall-a2";
-import { colors, spacing } from "../constants/theme";
+import { colors, spacing, cardEdge } from "../constants/theme";
 import type { PracticeExercise, PracticeKind, OverallLevel } from "../lib/overall-types";
 import type { PracticeConfig } from "../data/focused-practice";
 import { checkOverallAnswer, kindLabels, overallQuestionId, selectOverallExercises, shuffled, solutionText } from "../lib/overall-logic";
@@ -17,8 +17,8 @@ type Attempt = { exercise: PracticeExercise; answer: string; correct: boolean };
 
 function Button({ title, onPress, accent, disabled = false, secondary = false }: { title: string; onPress: () => void; accent: string; disabled?: boolean; secondary?: boolean }) {
   return <Pressable accessibilityRole="button" accessibilityState={{ disabled }} disabled={disabled} onPress={onPress}
-    style={({ pressed }) => [styles.button, { backgroundColor: secondary ? colors.surface : accent, borderColor: accent }, (disabled || pressed) && { opacity: 0.45 }]}>
-    <Text style={[styles.buttonText, { color: secondary ? colors.text : "#0f172a" }]}>{title}</Text>
+    style={({ pressed }) => [styles.button, { backgroundColor: secondary ? colors.surface : colors.primary, borderColor: accent }, (disabled || pressed) && { opacity: 0.45 }]}>
+    <Text style={[styles.buttonText, { color: secondary ? colors.text : colors.onPrimary }]}>{title}</Text>
   </Pressable>;
 }
 
@@ -27,7 +27,7 @@ export default function OverallPractice({ level = "A1", config }: { level?: Over
   const mode = config?.mode ?? (level === "A1" ? "overall-a1" : "overall-a2");
   const allExercises: PracticeExercise[] = config?.pool ?? (level === "A1" ? a1Exercises : a2Exercises);
   const title = config?.title ?? `Overall ${level}`;
-  const accent = config?.accent ?? (level === "A1" ? "#5ee0b2" : "#c4a5ff");
+  const accent = config?.accent ?? (level === "A1" ? colors.success : colors.possessive);
   const [phase, setPhase] = useState<"setup" | "playing" | "summary">("setup");
   const [filter, setFilter] = useState<PracticeKind | "mixed">("mixed");
   const [levelFilter, setLevelFilter] = useState<OverallLevel | "all">("all");
@@ -41,6 +41,7 @@ export default function OverallPractice({ level = "A1", config }: { level?: Over
   const [answers, setAnswers] = useState<string[]>([]);
   const [slots, setSlots] = useState<(number | null)[]>([]);
   const [options, setOptions] = useState<string[]>([]);
+  const [activeGap, setActiveGap] = useState(0);
   const [gapOptions, setGapOptions] = useState<string[][]>([]);
   const [result, setResult] = useState<boolean | null>(null);
   const [attempts, setAttempts] = useState<Attempt[]>([]);
@@ -82,6 +83,7 @@ export default function OverallPractice({ level = "A1", config }: { level?: Over
     setSlots(exercise.kind === "match" ? exercise.pairs.map(() => null) : exercise.kind === "order" ? exercise.chunks.map((_, i) => i === 0 ? 0 : null) : []);
     setOptions(exercise.kind === "choice" ? shuffled(exercise.options) : []);
     setGapOptions(exercise.kind === "fill" || exercise.kind === "conjugation" ? exercise.blanks.map(blank => shuffled(blank.options)) : []);
+    setActiveGap(0);
     setResult(null);
     setShowTranslation(false);
     setDragging(false);
@@ -158,14 +160,14 @@ export default function OverallPractice({ level = "A1", config }: { level?: Over
 
   return (
     <View style={styles.container}>
-      <ScrollView ref={scroll} scrollEnabled={!dragging} contentContainerStyle={styles.content}>
+      <ScrollView ref={scroll} showsVerticalScrollIndicator={false} scrollEnabled={!dragging} contentContainerStyle={styles.content}>
         {storageError && <Text accessibilityRole="alert" style={styles.error}>Progress could not be saved on this device. Your answers are still available in this session.</Text>}
         {phase === "setup" ? <>
-          <View style={[styles.levelBadge, { borderColor: accent }]}><Ionicons name="extension-puzzle-outline" size={34} color={accent} /><Text style={[styles.levelText, { color: accent }]}>{config ? "Practice" : level}</Text></View>
-          <Text style={styles.eyebrow}>A LITTLE PRACTICE, EVERY DAY</Text>
+          <View style={[styles.levelBadge, { borderColor: accent }]}><Ionicons name="extension-puzzle-outline" size={22} color={accent} /><Text style={[styles.levelText, { color: accent }]}>{config ? "Practice" : level}</Text></View>
+
           <Text style={styles.title}>{title}</Text>
           <Text style={styles.subtitle}>{config?.subtitle ?? (level === "A1" ? "Build confidence with everyday German." : "Connect your ideas and tell your story.")}</Text>
-          <Text style={styles.description}>{allExercises.length.toLocaleString()} exercises. Tap answers, move sentence pieces, and connect pairs where available. No typing needed.</Text>
+          <Text style={styles.description}>{allExercises.length.toLocaleString()} cards · tap, arrange & connect</Text>
           {config && <>
             <Text style={styles.sectionTitle}>Choose your focus</Text>
             <View style={styles.filters}>{(["all", "A1", "A2"] as const).filter(value => value === "all" || allExercises.some(e => e.level === value)).map(value => <Pressable key={value} accessibilityRole="button" accessibilityLabel={value === "all" ? "All levels" : `Level ${value}`} accessibilityState={{ selected: levelFilter === value }}
@@ -173,10 +175,10 @@ export default function OverallPractice({ level = "A1", config }: { level?: Over
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>{["All topics", ...new Set(levelPool.map(e => e.topic))].map(topic => <Pressable key={topic} accessibilityRole="button" accessibilityLabel={`Topic: ${topic}`} accessibilityState={{ selected: topicFilter === topic }}
               onPress={() => { setTopicFilter(topic); setFilter("mixed"); }} style={[styles.filter, topicFilter === topic && { borderColor: accent }]}><Text style={styles.filterText}>{topic}</Text></Pressable>)}</ScrollView>
           </>}
-          <Text style={styles.sectionTitle}>What would you like to practice?</Text>
+          <Text style={styles.sectionTitle}>Card types</Text>
           <View style={styles.filters}>{(["mixed", ...formats] as const).map(kind => <Pressable key={kind} accessibilityRole="button" accessibilityState={{ selected: filter === kind }}
-            onPress={() => setFilter(kind)} style={[styles.filter, filter === kind && { borderColor: accent, backgroundColor: "#26364b" }]}>
-            <Text style={[styles.filterText, filter === kind && { color: accent }]}>{kind === "mixed" ? "A little of everything" : kindLabels[kind]}</Text>
+            onPress={() => setFilter(kind)} style={[styles.filter, filter === kind && { borderColor: accent, backgroundColor: colors.surfaceLight }]}>
+            <Text style={[styles.filterText, filter === kind && { color: accent }]}>{kind === "mixed" ? "Mixed deck" : kindLabels[kind]}</Text>
           </Pressable>)}</View>
           <Text style={styles.sectionTitle}>Session length</Text>
           <View style={styles.counts}>{[...new Set([Math.min(5, available), Math.min(count, available), ...[5, 10, 15, 20, 30, 50].filter(n => n <= available)])].filter(n => n > 0).sort((a, b) => a - b).map(n => <Pressable key={n} accessibilityRole="button" accessibilityLabel={`${n} exercises`} accessibilityState={{ selected: Math.min(count, available) === n }} onPress={() => setCount(n)} style={[styles.count, Math.min(count, available) === n && { borderColor: accent }]}><Text style={[styles.countText, Math.min(count, available) === n && { color: accent }]}>{n}</Text></Pressable>)}</View>
@@ -199,7 +201,7 @@ export default function OverallPractice({ level = "A1", config }: { level?: Over
             <Text style={styles.description}>{a.exercise.explanation}</Text>
           </View>)}
         </> : exercise && <>
-          <View style={styles.progressRow}><Text style={styles.eyebrow}>{title.toUpperCase()}</Text><Text style={styles.help}>{index + 1} of {session.length} · {correctCount} correct</Text></View>
+          <View style={styles.progressRow}><Text style={styles.eyebrow}>CARD {index + 1} / {session.length}</Text><Text style={styles.help}>{correctCount} correct</Text></View>
           <View style={styles.track}><View style={[styles.progress, { backgroundColor: accent, width: `${(attempts.length / session.length) * 100}%` }]} /></View>
           <View style={styles.progressRow}><Text style={[styles.topic, { color: accent }]}>{exercise.topic}</Text><Text style={styles.format}>{kindLabels[exercise.kind]}</Text></View>
           <Text accessibilityRole="header" style={styles.prompt}>{exercise.instruction}</Text>
@@ -209,18 +211,25 @@ export default function OverallPractice({ level = "A1", config }: { level?: Over
               {part}{i < parts.length - 1 && <Text style={{ color: accent }}>{answers[i] || (parts.length > 2 ? `___ (${i + 1})` : "___")}</Text>}
             </React.Fragment>)}</Text>
             {exercise.kind === "choice" ? <View style={styles.optionList}>{options.map(option => <Pressable key={option} accessibilityRole="button" accessibilityLabel={option} accessibilityState={{ selected: answers[0] === option, disabled: result !== null }} disabled={result !== null}
-              onPress={() => setAnswers([option])} style={[styles.option, answers[0] === option && { borderColor: accent, backgroundColor: "#26364b" }, result !== null && option === exercise.answer && { borderColor: colors.success }]}>
+              onPress={() => setAnswers([option])} style={[styles.option, answers[0] === option && { borderColor: accent, backgroundColor: colors.surfaceLight }, result !== null && option === exercise.answer && { borderColor: colors.success }]}>
               <Text style={styles.optionText}>{option}</Text><Ionicons name={answers[0] === option ? "radio-button-on" : "radio-button-off"} size={21} color={answers[0] === option ? accent : colors.textSecondary} />
             </Pressable>)}</View> : <>
-              {exercise.blanks.map((blank, i) => <View key={`${exercise.id}-${i}`} style={styles.gapGroup}>
+              {exercise.blanks.length > 1 && <View style={styles.gapTabs}>{exercise.blanks.map((_, i) => <Pressable key={i} accessibilityRole="button" accessibilityLabel={`Select gap ${i + 1}`} accessibilityState={{ selected: activeGap === i }} onPress={() => setActiveGap(i)} style={[styles.gapTab, activeGap === i && { borderColor: accent, backgroundColor: colors.surfaceLight }]}><Text style={styles.filterText}>{i + 1}{answers[i] ? " •" : ""}</Text></Pressable>)}</View>}
+              {exercise.blanks.map((blank, i) => i === activeGap && <View key={`${exercise.id}-${i}`} style={styles.gapGroup}>
                 <Text style={styles.help}>{exercise.blanks.length > 1 ? `Gap ${i + 1} · ` : ""}{blank.hint}</Text>
                 <View style={styles.optionGrid}>{gapOptions[i]?.map(option => {
                   const selected = answers[i] === option;
                   const correctOption = blank.answers.includes(option);
                   return <Pressable key={option} accessibilityRole="button" accessibilityLabel={`Gap ${i + 1}: ${option}`}
                     accessibilityState={{ selected, disabled: result !== null }} disabled={result !== null}
-                    onPress={() => setAnswers(old => old.map((answer, j) => i === j ? option : answer))}
-                    style={[styles.gapOption, selected && { borderColor: accent, backgroundColor: "#26364b" },
+                    onPress={() => {
+                      const updated = answers.map((answer, j) => i === j ? option : answer);
+                      setAnswers(updated);
+                      const nextGap = updated.findIndex((answer, j) => j > i && !answer);
+                      const firstEmpty = updated.findIndex(answer => !answer);
+                      if (nextGap >= 0 || firstEmpty >= 0) setActiveGap(nextGap >= 0 ? nextGap : firstEmpty);
+                    }}
+                    style={[styles.gapOption, selected && { borderColor: accent, backgroundColor: colors.surfaceLight },
                       result !== null && correctOption && { borderColor: colors.success },
                       result !== null && selected && !correctOption && { borderColor: colors.error }]}>
                     <Text style={styles.optionText}>{option}</Text>
@@ -234,14 +243,14 @@ export default function OverallPractice({ level = "A1", config }: { level?: Over
           {showTranslation && exercise.translation && <Text style={styles.translation}>{exercise.translation}</Text>}
           {result === null ? <Button title="Check answer" onPress={check} accent={accent} disabled={!canCheck || dragging} /> : <>
             <View accessibilityLiveRegion="polite" style={[styles.feedback, { borderColor: result ? colors.success : colors.error }]}>
-              <Text style={[styles.feedbackTitle, { color: result ? colors.success : "#fca5a5" }]}>{result ? "Correct!" : "Not quite — here’s the answer"}</Text>
+              <Text style={[styles.feedbackTitle, { color: result ? colors.success : colors.error }]}>{result ? "Correct!" : "Not quite — here’s the answer"}</Text>
               <Text style={styles.solution}>{solutionText(exercise)}</Text>
               <Text style={styles.description}>{exercise.explanation}</Text>
               {exercise.source && <Text style={styles.footer}>A-Grammatik · page {exercise.source.printedPage} · exercise {exercise.source.exercise.split("-")[0]} · adapted for practice</Text>}
             </View>
             <Button title={busy ? "Saving…" : index === session.length - 1 ? "Finish session" : "Next exercise"} onPress={next} accent={accent} disabled={busy} />
           </>}
-          <Button title="End session" onPress={finish} accent={accent} secondary disabled={busy} />
+          <Pressable accessibilityRole="button" accessibilityState={{ disabled: busy }} onPress={finish} disabled={busy} style={styles.endLink}><Text style={styles.help}>End session</Text></Pressable>
         </>}
       </ScrollView>
     </View>
@@ -250,45 +259,48 @@ export default function OverallPractice({ level = "A1", config }: { level?: Over
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  content: { padding: spacing.lg, gap: spacing.md, paddingBottom: 48 },
-  levelBadge: { flexDirection: "row", alignItems: "center", gap: 12, borderWidth: 1, borderRadius: 20, padding: 16, alignSelf: "flex-start", marginTop: 12 },
-  levelText: { fontSize: 26, fontWeight: "800" },
+  content: { padding: spacing.md, gap: 12, paddingBottom: 24 },
+  levelBadge: { flexDirection: "row", alignItems: "center", gap: 8, borderWidth: 1, borderRadius: 12, padding: 10, alignSelf: "flex-start", backgroundColor: colors.surface },
+  levelText: { fontSize: 18, fontWeight: "800" },
   eyebrow: { color: colors.textSecondary, fontSize: 11, fontWeight: "800", letterSpacing: 1.5 },
-  title: { fontSize: 32, lineHeight: 39, fontWeight: "800", color: colors.text },
-  subtitle: { color: colors.text, fontSize: 18, lineHeight: 26 },
+  title: { fontSize: 26, lineHeight: 32, fontWeight: "800", color: colors.text },
+  subtitle: { color: colors.text, fontSize: 16, lineHeight: 23 },
   description: { color: colors.textSecondary, fontSize: 15, lineHeight: 23 },
-  sectionTitle: { color: colors.text, fontSize: 17, fontWeight: "700", marginTop: 12 },
+  sectionTitle: { color: colors.text, fontSize: 17, fontWeight: "700", marginTop: 4 },
   filters: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  filter: { borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, borderRadius: 24, paddingHorizontal: 15, paddingVertical: 13 },
+  filter: { borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 11, minHeight: 44 },
   filterText: { color: colors.textSecondary, fontSize: 14, fontWeight: "600" },
-  counts: { flexDirection: "row", gap: 12, flexWrap: "wrap" },
-  count: { minWidth: 60, minHeight: 60, alignItems: "center", justifyContent: "center", borderRadius: 14, borderWidth: 2, borderColor: colors.border, backgroundColor: colors.surface },
-  countText: { color: colors.textSecondary, fontSize: 22, fontWeight: "700" },
+  counts: { flexDirection: "row", gap: 8, flexWrap: "wrap" },
+  count: { minWidth: 44, minHeight: 46, alignItems: "center", justifyContent: "center", borderRadius: 14, borderWidth: 2, borderColor: colors.border, backgroundColor: colors.surface },
+  countText: { color: colors.text, fontSize: 18, fontWeight: "700" },
   help: { color: colors.textSecondary, fontSize: 13, lineHeight: 20 },
   footer: { color: colors.textSecondary, fontSize: 12, lineHeight: 19, marginTop: 8 },
-  button: { minHeight: 52, padding: 15, borderRadius: 13, borderWidth: 1, justifyContent: "center", alignItems: "center" },
+  button: { ...cardEdge, minHeight: 50, padding: 12, borderRadius: 14, justifyContent: "center", alignItems: "center" },
   buttonText: { fontSize: 16, fontWeight: "800" },
   progressRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" },
   track: { backgroundColor: colors.surfaceLight, height: 5, borderRadius: 4, overflow: "hidden" },
   progress: { height: 5, borderRadius: 4 },
   topic: { fontSize: 14, fontWeight: "700" },
   format: { color: colors.textSecondary, fontSize: 12 },
-  prompt: { color: colors.text, fontSize: 23, lineHeight: 31, fontWeight: "700", marginVertical: 4 },
-  questionCard: { padding: 20, borderRadius: 18, backgroundColor: colors.surface, gap: 18 },
-  sentence: { color: colors.text, fontSize: 24, lineHeight: 37, fontWeight: "500" },
-  optionList: { gap: 10 },
-  option: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", borderWidth: 1, borderColor: colors.border, padding: 15, borderRadius: 12, gap: 8 },
+  prompt: { color: colors.text, fontSize: 19, lineHeight: 25, fontWeight: "700", marginVertical: 2 },
+  questionCard: { ...cardEdge, padding: 16, borderRadius: 21, backgroundColor: colors.surface, gap: 16 },
+  sentence: { color: colors.text, fontSize: 25, lineHeight: 35, fontWeight: "600" },
+  optionList: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
+  option: { ...cardEdge, flexBasis: "45%", flexGrow: 1, minHeight: 56, backgroundColor: colors.background, flexDirection: "row", justifyContent: "space-between", alignItems: "center", borderWidth: 1, borderColor: colors.border, padding: 12, borderRadius: 14, gap: 8 },
   optionText: { color: colors.text, fontSize: 18, flexShrink: 1 },
+  gapTabs: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
+  gapTab: { minWidth: 44, minHeight: 44, borderWidth: 1, borderColor: colors.border, borderRadius: 10, alignItems: "center", justifyContent: "center", padding: 8 },
   gapGroup: { gap: 10 },
   optionGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
-  gapOption: { flexBasis: "45%", flexGrow: 1, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8, minHeight: 54, padding: 12, borderWidth: 1, borderColor: colors.border, borderRadius: 12 },
-  translationButton: { paddingVertical: 10, alignSelf: "flex-start" },
+  gapOption: { ...cardEdge, backgroundColor: colors.background, flexBasis: "45%", flexGrow: 1, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8, minHeight: 54, padding: 12, borderWidth: 1, borderColor: colors.border, borderRadius: 12 },
+  endLink: { minHeight: 44, alignItems: "center", justifyContent: "center" },
+  translationButton: { minHeight: 44, justifyContent: "center", paddingVertical: 8, alignSelf: "flex-start" },
   translation: { color: colors.textSecondary, fontStyle: "italic", fontSize: 16, lineHeight: 24 },
-  feedback: { padding: 18, borderRadius: 14, backgroundColor: colors.surface, borderWidth: 1, gap: 9 },
+  feedback: { ...cardEdge, padding: 14, borderRadius: 14, backgroundColor: colors.surface, borderWidth: 1, gap: 9 },
   feedbackTitle: { fontSize: 17, fontWeight: "700" },
   solution: { color: colors.text, fontSize: 19, lineHeight: 28, fontWeight: "600" },
   score: { fontSize: 72, fontWeight: "800", marginTop: 12 },
   scoreTotal: { fontSize: 32, color: colors.textSecondary },
-  review: { backgroundColor: colors.surface, padding: 18, borderRadius: 14, gap: 10 },
-  error: { color: "#fca5a5", lineHeight: 22 },
+  review: { ...cardEdge, backgroundColor: colors.surface, padding: 18, borderRadius: 14, gap: 10 },
+  error: { color: colors.error, lineHeight: 22 },
 });

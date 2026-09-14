@@ -59,7 +59,7 @@ export default function InstallApp() {
     }
   };
   return <View style={styles.card}>
-    <Ionicons name="download-outline" size={23} color="#67e8f9" accessible={false} />
+    <Ionicons name="download-outline" size={23} color={colors.primary} accessible={false} />
     <View style={styles.body}>
       <Text style={styles.title}>Doiti on your home screen</Text>
       <Text style={styles.detail}>Open it like an app, in its own window.</Text>
@@ -75,10 +75,10 @@ export default function InstallApp() {
 }
 
 const styles = StyleSheet.create({
-  card: { flexDirection: "row", gap: 12, padding: 14, backgroundColor: "#16313d", borderBottomWidth: 1, borderBottomColor: "#2b5263", alignItems: "flex-start" },
+  card: { flexDirection: "row", gap: 12, padding: 14, backgroundColor: colors.green, borderBottomWidth: 1, borderBottomColor: colors.border, alignItems: "flex-start" },
   body: { flex: 1, gap: 6 }, title: { color: colors.text, fontSize: 16, fontWeight: "700" },
-  detail: { color: "#c0d4df", fontSize: 13, lineHeight: 19 },
-  install: { minHeight: 44, justifyContent: "center", alignSelf: "flex-start", paddingHorizontal: 14, borderRadius: 9, marginTop: 3, backgroundColor: "#67e8f9" },
-  installText: { color: colors.background, fontSize: 14, fontWeight: "700" },
+  detail: { color: colors.textSecondary, fontSize: 13, lineHeight: 19 },
+  install: { minHeight: 44, justifyContent: "center", alignSelf: "flex-start", paddingHorizontal: 14, borderRadius: 9, marginTop: 3, backgroundColor: colors.primary },
+  installText: { color: colors.onPrimary, fontSize: 14, fontWeight: "700" },
   dismiss: { minWidth: 44, minHeight: 44, alignItems: "center", justifyContent: "center", margin: -8 },
 });

@@ -6,17 +6,17 @@
     "orientation": "portrait",
     "icon": "./assets/images/owl-mascot.png",
     "scheme": "doiti",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
       "image": "./assets/images/splash-hero.png",
       "resizeMode": "contain",
-      "backgroundColor": "#0f172a"
+      "backgroundColor": "#f2efe6"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/owl-mascot.png",
-        "backgroundColor": "#0f172a"
+        "backgroundColor": "#f2efe6"
       },
       "package": "com.doiti.app"
     },

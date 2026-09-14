@@ -3,9 +3,9 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import type { LayoutRectangle } from "react-native";
 import type { MatchExercise } from "../lib/overall-types";
 import { connectPair, shuffled } from "../lib/overall-logic";
-import { colors } from "../constants/theme";
+import { colors, cardEdge } from "../constants/theme";
 
-const pairColors = ["#67e8f9", "#c4a5ff", "#fbbf24", "#fda4af", "#86efac"];
+const pairColors = ["#34626b", "#654b79", "#866018", "#884764", "#346456"];
 export default function MatchingPairs({ exercise, slots, onChange, disabled, checked }: {
   exercise: MatchExercise; slots: (number | null)[]; onChange: (slots: (number | null)[]) => void; disabled: boolean; checked: boolean;
 }) {
@@ -60,14 +60,14 @@ export default function MatchingPairs({ exercise, slots, onChange, disabled, che
   </View>;
 }
 const styles = StyleSheet.create({
-  card: { padding: 16, borderRadius: 18, backgroundColor: colors.surface, gap: 16 },
+  card: { ...cardEdge, padding: 12, borderRadius: 21, backgroundColor: colors.surface, gap: 12 },
   help: { color: colors.textSecondary, fontSize: 14, lineHeight: 21 },
   headings: { flexDirection: "row", justifyContent: "space-between" },
   heading: { width: "43%", color: colors.textSecondary, fontSize: 13, fontWeight: "700" },
   board: { flexDirection: "row", justifyContent: "space-between" },
-  column: { width: "43%", gap: 14 },
-  tile: { minHeight: 76, justifyContent: "center", borderWidth: 2, borderColor: colors.border, borderRadius: 12, padding: 10, backgroundColor: colors.background, gap: 5 },
-  selected: { backgroundColor: "#26364b" },
+  column: { width: "43%", gap: 10 },
+  tile: { ...cardEdge, minHeight: 64, justifyContent: "center", borderWidth: 2, borderColor: colors.border, borderRadius: 12, padding: 10, backgroundColor: colors.background, gap: 5 },
+  selected: { backgroundColor: colors.green },
   word: { color: colors.text, fontSize: 17, lineHeight: 23, fontWeight: "600" },
   tag: { fontSize: 11, color: colors.textSecondary },
   actions: { flexDirection: "row", justifyContent: "space-between", flexWrap: "wrap" },

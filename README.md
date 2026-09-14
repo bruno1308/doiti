@@ -19,7 +19,7 @@
 The compact **Pocket Decks** menu opens Overall A1, Overall A2, Conversation,
 and a filterable library of all 19 grammar modes. Quick focus shortcuts jump
 straight to common topics. Warm paper cards and raised answer buttons carry
-through every activity, setup screen, and session summary. Multi-gap cards show
+through every activity, Settings, and session summary. Multi-gap cards show
 four choices for the active gap, advance to the next empty gap, and let you
 revisit any gap before checking. Conversation separates blue dialogue from
 amber objectives and keeps answer-revealing explanations behind a solved reply
@@ -51,8 +51,14 @@ adapted from throughout the supplied *A-Grammatik* workbook:
 - Drag sentence pieces into numbered slots, swap placed pieces, or return them to
   the bank. Tapping and keyboard activation provide an alternative to dragging.
 
-Choose a mixed session or one format, with 5–50 questions. Sessions prioritize
-unseen and weaker exercises. English translations are offered where available,
+Opening a grammar or Overall deck immediately starts **20 mixed cards**. The
+**Settings** tab saves a length of 5, 10, 15, 20, 30, or 50 cards and lets you
+include any combination of answer choices, gaps, conjugations, sentence puzzles,
+and matching. Preferences apply to the next session and persist on this device.
+Only relevant, selected types are mixed; small decks use fewer cards without
+repeats. If a deck has no matching types, it links to Settings. Conversation keeps
+its scenario menu and five objectives per scenario. Sessions prioritize unseen
+and weaker exercises. English translations are offered where available,
 mistakes can be reviewed at the end, and each level has its own
 progress and History entries. Existing saved progress is preserved.
 

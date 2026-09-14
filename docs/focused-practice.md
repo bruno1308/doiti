@@ -10,8 +10,8 @@ Implemented in this update:
 - [x] Add 12 focused dann/denn/wenn questions and 12 sentence puzzles.
 - [x] Add 21 matching boards with four pairs each: 10 comparison/superlative boards, six opposite boards, and five similar-meaning boards.
 - [x] Offer sentence dragging wherever the topic has sentence puzzles, plus tap/keyboard alternatives.
-- [x] Offer level, topic, activity, and session-length choices with no typing.
-- [x] Group the home cards using Nouns & cases, Verbs, Sentences, and Word pairs buttons.
+- [x] Start practice immediately; save session length and activity preferences in Settings.
+- [x] Group the grammar library using Nouns & cases, Verbs, Sentences, and Word pairs buttons.
 
 ## Interaction
 
@@ -23,9 +23,16 @@ partners; otherwise it moves the connection. Connections can be cleared or reset
 before checking. Four correct connections score one exercise. Checked activities
 lock their controls and show the solution; incomplete activities cannot be checked.
 
-The setup only offers activity types and levels present in the selected pool.
-Topic chips narrow the pool further. Session lengths are capped to the available
-questions, including topics containing fewer than five questions.
+Selecting a deck starts 20 mixed cards immediately. Settings stores session length
+and a nonempty selection of exercise types in `doiti_practice_preferences`,
+separately from progress. New sessions wait for pending preference writes, filter
+the chosen deck to selected types, and balance only those types. Session lengths
+are capped to available questions without repeats. A deck with no matching types
+shows an explanation and a Settings link instead of silently ignoring preferences.
+Conversation retains its scenario selection and five objectives per scenario.
+
+Der/Die/Das admits only noun-gender article choices, regardless of the source
+chapter label. Sentence puzzles from the same chapter remain in Overall practice.
 
 ## Data and progress
 

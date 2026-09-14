@@ -1,15 +1,17 @@
 import React, { useCallback, useRef, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import a1Exercises from "../data/overall-a1";
 import a2Exercises from "../data/overall-a2";
 import { colors, spacing, cardEdge } from "../constants/theme";
-import type { PracticeExercise, PracticeKind, OverallLevel } from "../lib/overall-types";
+import type { PracticeExercise, OverallLevel } from "../lib/overall-types";
 import type { PracticeConfig } from "../data/focused-practice";
-import { checkOverallAnswer, kindLabels, overallQuestionId, selectOverallExercises, shuffled, solutionText } from "../lib/overall-logic";
+import { checkOverallAnswer, kindLabels, overallQuestionId, shuffled, solutionText } from "../lib/overall-logic";
 import { getQuestionStats, recordAnswer, recordQuestionAnswer, recordSession } from "../lib/stats";
+import { getPracticePreferences } from "../lib/settings";
+import { selectPracticeSession } from "../lib/practice-preferences";
 import SentencePuzzle from "./SentencePuzzle";
 import MatchingPairs from "./MatchingPairs";
 
@@ -28,14 +30,8 @@ export default function OverallPractice({ level = "A1", config }: { level?: Over
   const allExercises: PracticeExercise[] = config?.pool ?? (level === "A1" ? a1Exercises : a2Exercises);
   const title = config?.title ?? `Overall ${level}`;
   const accent = config?.accent ?? (level === "A1" ? colors.success : colors.possessive);
-  const [phase, setPhase] = useState<"setup" | "playing" | "summary">("setup");
-  const [filter, setFilter] = useState<PracticeKind | "mixed">("mixed");
-  const [levelFilter, setLevelFilter] = useState<OverallLevel | "all">("all");
-  const [topicFilter, setTopicFilter] = useState("All topics");
-  const levelPool = allExercises.filter(e => !config || levelFilter === "all" || e.level === levelFilter);
-  const pool = levelPool.filter(e => topicFilter === "All topics" || e.topic === topicFilter);
-  const formats = (Object.keys(kindLabels) as PracticeKind[]).filter(kind => pool.some(e => e.kind === kind));
-  const [count, setCount] = useState(10);
+  const [phase, setPhase] = useState<"loading" | "playing" | "summary" | "empty" | "error">("loading");
+  const [sessionTarget, setSessionTarget] = useState(20);
   const [session, setSession] = useState<PracticeExercise[]>([]);
   const [index, setIndex] = useState(0);
   const [answers, setAnswers] = useState<string[]>([]);
@@ -49,7 +45,6 @@ export default function OverallPractice({ level = "A1", config }: { level?: Over
   const [dragging, setDragging] = useState(false);
   const [showTranslation, setShowTranslation] = useState(false);
   const [storageError, setStorageError] = useState(false);
-  const [startError, setStartError] = useState(false);
   const scroll = useRef<ScrollView>(null);
   const attemptRef = useRef<Attempt[]>([]);
   const answered = useRef(false);
@@ -67,18 +62,7 @@ export default function OverallPractice({ level = "A1", config }: { level?: Over
     enqueue(() => recordSession({ mode, date: new Date().toISOString(), total: completed.length, correct: completed.filter(a => a.correct).length }));
   }, [enqueue, mode]);
 
-  useFocusEffect(useCallback(() => {
-    focusGeneration.current++;
-    setPhase("setup");
-    setBusy(false);
-    busyRef.current = false;
-    return () => {
-      focusGeneration.current++;
-      saveSession();
-    };
-  }, [saveSession]));
-
-  const prepare = (exercise: PracticeExercise) => {
+  const prepare = useCallback((exercise: PracticeExercise) => {
     setAnswers(exercise.kind === "fill" || exercise.kind === "conjugation" ? exercise.blanks.map(() => "") : []);
     setSlots(exercise.kind === "match" ? exercise.pairs.map(() => null) : exercise.kind === "order" ? exercise.chunks.map((_, i) => i === 0 ? 0 : null) : []);
     setOptions(exercise.kind === "choice" ? shuffled(exercise.options) : []);
@@ -89,19 +73,21 @@ export default function OverallPractice({ level = "A1", config }: { level?: Over
     setDragging(false);
     answered.current = false;
     scroll.current?.scrollTo({ y: 0, animated: false });
-  };
-  const start = async () => {
+  }, []);
+  const start = useCallback(async () => {
     if (busyRef.current) return;
     busyRef.current = true;
     setBusy(true);
-    setStartError(false);
+    setPhase("loading");
+    setSession([]);
     const generation = focusGeneration.current;
     try {
       await writes.current;
-      const stats = await getQuestionStats();
+      const [stats, preferences] = await Promise.all([getQuestionStats(), getPracticePreferences()]);
       if (generation !== focusGeneration.current) return;
-      const next = selectOverallExercises(pool, count, stats, filter);
-      if (!next.length) throw new Error("No exercises available");
+      const next = selectPracticeSession(allExercises, preferences, stats);
+      setSessionTarget(preferences.count);
+      if (!next.length) { setPhase("empty"); return; }
       setSession(next);
       setIndex(0);
       setAttempts([]);
@@ -109,15 +95,26 @@ export default function OverallPractice({ level = "A1", config }: { level?: Over
       prepare(next[0]);
       setPhase("playing");
     } catch {
-      setStartError(true);
+      if (generation === focusGeneration.current) setPhase("error");
     } finally {
       if (generation === focusGeneration.current) { setBusy(false); busyRef.current = false; }
     }
-  };
+  }, [allExercises, prepare]);
+
+  useFocusEffect(useCallback(() => {
+    focusGeneration.current++;
+    busyRef.current = false;
+    void start();
+    return () => {
+      focusGeneration.current++;
+      saveSession();
+    };
+  }, [saveSession, start]));
+
   const exercise = session[index];
   const canCheck = exercise && (exercise.kind === "order" || exercise.kind === "match" ? slots.every(s => s !== null) : exercise.kind === "choice" ? !!answers[0] : answers.every(a => a.trim().length > 0));
   const check = () => {
-    if (answered.current || !canCheck) return;
+    if (phase !== "playing" || answered.current || !canCheck) return;
     answered.current = true;
     const correct = checkOverallAnswer(exercise, answers, slots);
     const answer = exercise.kind === "match" ? exercise.pairs.map((pair, left) => `${pair.left} → ${exercise.pairs[slots[left]!].right}`).join("; ")
@@ -130,11 +127,13 @@ export default function OverallPractice({ level = "A1", config }: { level?: Over
   };
   const next = async () => {
     if (busyRef.current || !answered.current) return;
+    const generation = focusGeneration.current;
     if (index === session.length - 1) {
       busyRef.current = true;
       setBusy(true);
       saveSession();
       await writes.current;
+      if (generation !== focusGeneration.current) return;
       setPhase("summary");
       setBusy(false);
       busyRef.current = false;
@@ -146,52 +145,43 @@ export default function OverallPractice({ level = "A1", config }: { level?: Over
   };
   const finish = async () => {
     if (busyRef.current) return;
+    if (!attempts.length) { router.navigate("/"); return; }
+    const generation = focusGeneration.current;
     busyRef.current = true;
     setBusy(true);
     saveSession();
     await writes.current;
+    if (generation !== focusGeneration.current) return;
     setBusy(false);
     busyRef.current = false;
-    setPhase(attempts.length ? "summary" : "setup");
+    setPhase("summary");
     scroll.current?.scrollTo({ y: 0, animated: false });
   };
-  const available = pool.filter(e => filter === "mixed" || e.kind === filter).length;
   const correctCount = attempts.filter(a => a.correct).length;
 
   return (
     <View style={styles.container}>
       <ScrollView ref={scroll} showsVerticalScrollIndicator={false} scrollEnabled={!dragging} contentContainerStyle={styles.content}>
         {storageError && <Text accessibilityRole="alert" style={styles.error}>Progress could not be saved on this device. Your answers are still available in this session.</Text>}
-        {phase === "setup" ? <>
-          <View style={[styles.levelBadge, { borderColor: accent }]}><Ionicons name="extension-puzzle-outline" size={22} color={accent} /><Text style={[styles.levelText, { color: accent }]}>{config ? "Practice" : level}</Text></View>
-
-          <Text style={styles.title}>{title}</Text>
-          <Text style={styles.subtitle}>{config?.subtitle ?? (level === "A1" ? "Build confidence with everyday German." : "Connect your ideas and tell your story.")}</Text>
-          <Text style={styles.description}>{allExercises.length.toLocaleString()} cards · tap, arrange & connect</Text>
-          {config && <>
-            <Text style={styles.sectionTitle}>Choose your focus</Text>
-            <View style={styles.filters}>{(["all", "A1", "A2"] as const).filter(value => value === "all" || allExercises.some(e => e.level === value)).map(value => <Pressable key={value} accessibilityRole="button" accessibilityLabel={value === "all" ? "All levels" : `Level ${value}`} accessibilityState={{ selected: levelFilter === value }}
-              onPress={() => { setLevelFilter(value); setTopicFilter("All topics"); setFilter("mixed"); }} style={[styles.filter, levelFilter === value && { borderColor: accent }]}><Text style={styles.filterText}>{value === "all" ? "All levels" : value}</Text></Pressable>)}</View>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>{["All topics", ...new Set(levelPool.map(e => e.topic))].map(topic => <Pressable key={topic} accessibilityRole="button" accessibilityLabel={`Topic: ${topic}`} accessibilityState={{ selected: topicFilter === topic }}
-              onPress={() => { setTopicFilter(topic); setFilter("mixed"); }} style={[styles.filter, topicFilter === topic && { borderColor: accent }]}><Text style={styles.filterText}>{topic}</Text></Pressable>)}</ScrollView>
-          </>}
-          <Text style={styles.sectionTitle}>Card types</Text>
-          <View style={styles.filters}>{(["mixed", ...formats] as const).map(kind => <Pressable key={kind} accessibilityRole="button" accessibilityState={{ selected: filter === kind }}
-            onPress={() => setFilter(kind)} style={[styles.filter, filter === kind && { borderColor: accent, backgroundColor: colors.surfaceLight }]}>
-            <Text style={[styles.filterText, filter === kind && { color: accent }]}>{kind === "mixed" ? "Mixed deck" : kindLabels[kind]}</Text>
-          </Pressable>)}</View>
-          <Text style={styles.sectionTitle}>Session length</Text>
-          <View style={styles.counts}>{[...new Set([Math.min(5, available), Math.min(count, available), ...[5, 10, 15, 20, 30, 50].filter(n => n <= available)])].filter(n => n > 0).sort((a, b) => a - b).map(n => <Pressable key={n} accessibilityRole="button" accessibilityLabel={`${n} exercises`} accessibilityState={{ selected: Math.min(count, available) === n }} onPress={() => setCount(n)} style={[styles.count, Math.min(count, available) === n && { borderColor: accent }]}><Text style={[styles.countText, Math.min(count, available) === n && { color: accent }]}>{n}</Text></Pressable>)}</View>
-          <Text style={styles.help}>{available} available · {filter === "mixed" ? "A mix of the available activities" : "Focus on one skill"}</Text>
-          {startError && <Text accessibilityRole="alert" style={styles.error}>Could not load your practice. Please try again.</Text>}
-          <Button title={busy ? "Getting ready…" : "Start practice"} onPress={start} accent={accent} disabled={busy || !available} />
-          <Text style={styles.footer}>{config ? (allExercises.some(e => e.source) ? "Includes original practice and relevant A-Grammatik exercises. Progress on a book question is shared with Overall practice." : "Connect four pairs per exercise. You can change your connections before checking.") : "Based on the exercise formats in A-Grammatik by Anne Buscha and Szilvia Szita. Adapted into short, interactive practice."}</Text>
+        {phase === "loading" ? <View style={styles.loading}>
+          <ActivityIndicator color={accent} accessibilityLabel="Preparing your cards" />
+          <Text style={styles.help}>Getting your cards ready…</Text>
+        </View> : phase === "empty" ? <>
+          <Text style={styles.title}>No matching card types</Text>
+          <Text style={styles.description}>{title} does not include your selected exercise types. Choose one of this deck’s types in Settings.</Text>
+          <Text style={styles.help}>Available here: {[...new Set(allExercises.map(e => kindLabels[e.kind]))].join(", ")}</Text>
+          <Button title="Open Settings" onPress={() => router.navigate("/settings")} accent={accent} />
+          <Button title="Back to decks" onPress={() => router.navigate("/")} accent={accent} secondary />
+        </> : phase === "error" ? <>
+          <Text accessibilityRole="alert" style={styles.error}>Could not load your practice or saved settings. Please try again.</Text>
+          <Button title="Try again" onPress={start} accent={accent} disabled={busy} />
+          <Button title="Back to decks" onPress={() => router.navigate("/")} accent={accent} secondary />
         </> : phase === "summary" ? <>
           <Text style={styles.eyebrow}>{title.toUpperCase()} · SESSION COMPLETE</Text>
           <Text style={styles.title}>{correctCount === attempts.length ? "Beautifully done!" : "A little better every time."}</Text>
           <Text style={[styles.score, { color: accent }]}>{correctCount}<Text style={styles.scoreTotal}> / {attempts.length}</Text></Text>
           <Text style={styles.subtitle}>correct answers · {Math.round(correctCount / Math.max(attempts.length, 1) * 100)}%</Text>
-          <Button title="Practice again" onPress={() => setPhase("setup")} accent={accent} />
+          <Button title="Practice again" onPress={start} disabled={busy} accent={accent} />
           <Button title="Back to home" onPress={() => router.navigate("/")} accent={accent} secondary />
           {attempts.some(a => !a.correct) && <Text style={styles.sectionTitle}>Take another look</Text>}
           {attempts.filter(a => !a.correct).map(a => <View key={a.exercise.id} style={styles.review}>
@@ -202,6 +192,7 @@ export default function OverallPractice({ level = "A1", config }: { level?: Over
           </View>)}
         </> : exercise && <>
           <View style={styles.progressRow}><Text style={styles.eyebrow}>CARD {index + 1} / {session.length}</Text><Text style={styles.help}>{correctCount} correct</Text></View>
+          {index === 0 && session.length < sessionTarget && <Text style={styles.help}>{session.length} matching cards available · no repeats</Text>}
           <View style={styles.track}><View style={[styles.progress, { backgroundColor: accent, width: `${(attempts.length / session.length) * 100}%` }]} /></View>
           <View style={styles.progressRow}><Text style={[styles.topic, { color: accent }]}>{exercise.topic}</Text><Text style={styles.format}>{kindLabels[exercise.kind]}</Text></View>
           <Text accessibilityRole="header" style={styles.prompt}>{exercise.instruction}</Text>
@@ -258,21 +249,15 @@ export default function OverallPractice({ level = "A1", config }: { level?: Over
 }
 
 const styles = StyleSheet.create({
+  loading: { paddingVertical: 32, alignItems: "center", gap: 12 },
   container: { flex: 1, backgroundColor: colors.background },
   content: { padding: spacing.md, gap: 12, paddingBottom: 24 },
-  levelBadge: { flexDirection: "row", alignItems: "center", gap: 8, borderWidth: 1, borderRadius: 12, padding: 10, alignSelf: "flex-start", backgroundColor: colors.surface },
-  levelText: { fontSize: 18, fontWeight: "800" },
   eyebrow: { color: colors.textSecondary, fontSize: 11, fontWeight: "800", letterSpacing: 1.5 },
   title: { fontSize: 26, lineHeight: 32, fontWeight: "800", color: colors.text },
   subtitle: { color: colors.text, fontSize: 16, lineHeight: 23 },
   description: { color: colors.textSecondary, fontSize: 15, lineHeight: 23 },
   sectionTitle: { color: colors.text, fontSize: 17, fontWeight: "700", marginTop: 4 },
-  filters: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  filter: { borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 11, minHeight: 44 },
   filterText: { color: colors.textSecondary, fontSize: 14, fontWeight: "600" },
-  counts: { flexDirection: "row", gap: 8, flexWrap: "wrap" },
-  count: { minWidth: 44, minHeight: 46, alignItems: "center", justifyContent: "center", borderRadius: 14, borderWidth: 2, borderColor: colors.border, backgroundColor: colors.surface },
-  countText: { color: colors.text, fontSize: 18, fontWeight: "700" },
   help: { color: colors.textSecondary, fontSize: 13, lineHeight: 20 },
   footer: { color: colors.textSecondary, fontSize: 12, lineHeight: 19, marginTop: 8 },
   button: { ...cardEdge, minHeight: 50, padding: 12, borderRadius: 14, justifyContent: "center", alignItems: "center" },

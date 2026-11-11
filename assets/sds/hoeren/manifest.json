@@ -1,0 +1,104 @@
+{
+  "H-preA1-1": {
+    "hash": "accc6713b5657041",
+    "voices": {
+      "": "lea"
+    }
+  },
+  "H-A2-2": {
+    "hash": "25059e1fa7106a46",
+    "voices": {
+      "Herr Demir": "ben",
+      "Passantin": "ava"
+    }
+  },
+  "H-preA1-2": {
+    "hash": "879e3802c97ca685",
+    "voices": {
+      "": "otto"
+    }
+  },
+  "H-preA1-3": {
+    "hash": "4b1e966373ee422c",
+    "voices": {
+      "": "ava"
+    }
+  },
+  "H-A1-1": {
+    "hash": "2e54afc254c5e05a",
+    "voices": {
+      "": "ben"
+    }
+  },
+  "H-A1-2": {
+    "hash": "8bd32d5171ccf8e4",
+    "voices": {
+      "": "lea"
+    }
+  },
+  "H-A1-3": {
+    "hash": "6e3fa5de4be01afc",
+    "voices": {
+      "": "otto"
+    }
+  },
+  "H-A2-1": {
+    "hash": "39ed591687fb0c86",
+    "voices": {
+      "Durchsage": "otto"
+    }
+  },
+  "H-A2-3": {
+    "hash": "c4ca1e8dcf923bf6",
+    "voices": {
+      "Frau Keller": "lea"
+    }
+  },
+  "H-B1-1": {
+    "hash": "987fab2209575e6a",
+    "voices": {
+      "Herr Bühler": "ben",
+      "Frau Novak": "ava"
+    }
+  },
+  "H-B1-2": {
+    "hash": "bb82c7273c7f84f9",
+    "voices": {
+      "Frau Stalder": "lea",
+      "Herr Okafor": "otto"
+    }
+  },
+  "H-B1-3": {
+    "hash": "84046ed5905ed1d9",
+    "voices": {
+      "Herr Brunner": "ben",
+      "Frau Aydin": "ava"
+    }
+  },
+  "H-B2-1": {
+    "hash": "b774445c65554753",
+    "voices": {
+      "Moderatorin": "lea",
+      "Herr Camenzind": "otto",
+      "Frau Sommer": "ava"
+    }
+  },
+  "H-B2-2": {
+    "hash": "266b86d0cddc1c41",
+    "voices": {
+      "Moderator": "ben",
+      "Herr Zbinden": "otto",
+      "Frau Vogt": "ava"
+    }
+  },
+  "H-B2-3": {
+    "hash": "482ffa3b03c6e242",
+    "voices": {
+      "Moderatorin": "lea",
+      "Sandra Gerber": "ava",
+      "Daniel Lüthi": "otto",
+      "Ursula Marti": "annika",
+      "Milan Kovac": "ben"
+    }
+  }
+}

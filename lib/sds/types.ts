@@ -39,7 +39,7 @@ export interface LesenTask extends ReceptiveBase {
 export interface HoerenLine { speaker?: string; text: string }
 export interface HoerenTask extends ReceptiveBase {
   skill: "hoeren";
-  /** Spoken by the device's German voice; never shown before the task is finished. */
+  /** What is said in the recording; never shown before the task is finished. */
   script: HoerenLine[];
   /** How often the recording may be played. */
   plays: 1 | 2;

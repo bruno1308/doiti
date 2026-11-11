@@ -1,7 +1,10 @@
+import { createAudioPlayer, type AudioPlayer } from "expo-audio";
 import * as Speech from "expo-speech";
-import type { HoerenLine, SdsLevel } from "./types";
+import { hoerenAudio } from "./hoeren-audio";
+import type { HoerenLine, HoerenTask, SdsLevel } from "./types";
 
-// Listening tasks are read by the device's German voice, so the test works offline.
+// Listening tasks play a bundled recording (scripts/generate-sds-audio.cjs), so the test works offline.
+// A task without a recording, or one whose recording fails to load, is read by the device's German voice.
 const rates: Record<SdsLevel, number> = { preA1: 0.7, A1: 0.75, A2: 0.85, B1: 0.95, B2: 1 };
 const pitches = [1, 0.8, 1.2, 0.9, 1.1];
 
@@ -47,4 +50,51 @@ export async function playScript(lines: HoerenLine[], level: SdsLevel): Promise<
   }
   return id === run;
 }
-export function stopScript(): void { run++; Speech.stop(); }
+let player: AudioPlayer | null = null;
+function release(): void {
+  const current = player;
+  player = null;
+  if (!current) return;
+  try { current.pause(); current.remove(); } catch { /* already released */ }
+}
+
+/** Plays a bundled recording. "failed" means it never started, so the caller can fall back to the device voice. */
+function playRecording(source: number): Promise<"done" | "stopped" | "failed"> {
+  const id = ++run;
+  Speech.stop();
+  release();
+  return new Promise(resolve => {
+    let started = false;
+    let settled = false;
+    let current: AudioPlayer;
+    const finish = (outcome: "done" | "stopped" | "failed") => {
+      if (settled) return;
+      settled = true;
+      clearInterval(watch);
+      clearTimeout(giveUp);
+      if (player === current) release();
+      resolve(outcome);
+    };
+    // stopScript() or another recording taking over ends this one.
+    const watch = setInterval(() => { if (id !== run) finish("stopped"); }, 200);
+    const giveUp = setTimeout(() => { if (!started) finish("failed"); }, 8000);
+    try {
+      current = createAudioPlayer(source);
+      player = current;
+      current.addListener("playbackStatusUpdate", status => {
+        if (status.playing) started = true;
+        if (status.didJustFinish) finish("done");
+      });
+      current.play();
+    } catch { finish("failed"); }
+  });
+}
+
+/** Plays a listening task. Resolves false if it was stopped or could not be played at all. */
+export async function playTask(task: HoerenTask): Promise<boolean> {
+  const source = hoerenAudio[task.id];
+  if (source === undefined) return playScript(task.script, task.level);
+  const outcome = await playRecording(source);
+  return outcome === "failed" ? playScript(task.script, task.level) : outcome === "done";
+}
+export function stopScript(): void { run++; Speech.stop(); release(); }

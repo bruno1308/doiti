@@ -6,7 +6,7 @@ import { hoerenTasks } from "../../data/sds/hoeren";
 import { lesenTasks } from "../../data/sds/lesen";
 import { schreibenTasks } from "../../data/sds/schreiben";
 import { closeTablet, countWords, moduleMinutes, newTablet, nextStep, pickTask, recordReceptive, recordWriting, scoreReceptive, type TabletState } from "../../lib/sds/engine";
-import { playScript, stopScript } from "../../lib/sds/speech";
+import { playTask, stopScript } from "../../lib/sds/speech";
 import { levelLabels, skillLabels, type HoerenTask, type ReceptiveTask, type SdsItem, type SdsLevel, type SdsModule, type WritingTask } from "../../lib/sds/types";
 import { Button, ui } from "./ui";
 
@@ -37,7 +37,7 @@ function Player({ task }: { task: HoerenTask }) {
   useEffect(() => () => stopScript(), [task.id]);
   const play = async () => {
     setPlaying(true); setFailed(false);
-    const ok = await playScript(task.script, task.level);
+    const ok = await playTask(task);
     setPlaying(false);
     // A recording that could not be played does not use up a turn.
     if (ok) setPlayed(count => count + 1); else setFailed(true);
@@ -46,7 +46,7 @@ function Player({ task }: { task: HoerenTask }) {
   return <View style={styles.player}>
     <Button icon={playing ? "volume-high" : "play"} title={playing ? "Läuft …" : left > 0 ? `Anhören (${played + 1} von ${task.plays})` : "Nicht mehr verfügbar"} disabled={playing || left <= 0} onPress={play} />
     <Text style={ui.help}>{task.plays === 1 ? "Sie hören den Text nur einmal." : "Sie können den Text zweimal hören."}</Text>
-    {failed && <Text accessibilityRole="alert" style={ui.error}>The recording could not be played. Check that your device has a German voice installed and that the sound is on, then try again.</Text>}
+    {failed && <Text accessibilityRole="alert" style={ui.error}>The recording could not be played. Check that the sound is on, then try again.</Text>}
   </View>;
 }
 

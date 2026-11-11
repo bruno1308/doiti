@@ -75,4 +75,7 @@ export interface SpeakingTask {
   prepSeconds?: number;
 }
 
-export type SdsModule = "full" | "written" | "oral" | "speaking" | "writing";
+// The real SDS exists only as the whole test, the written module (Lesen + Schreiben) or the oral module
+// (Hören + Sprechen); single skills cannot be tested (Testreglement SDS). The "-quick" variants are this
+// app's own short practice form of each, in a quarter of the time.
+export type SdsModule = "full" | "written" | "oral" | "full-quick" | "written-quick" | "oral-quick";

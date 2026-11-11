@@ -103,19 +103,58 @@ test('the streaming downsampler drops nothing across frames', () => {
   assert.deepEqual([...resample(Float32Array.from([1, 3, 5])), ...resample(Float32Array.from([7]))], [2, 6]);
 });
 
-test('modules test only their own skills; writing alone covers every level', () => {
+test('modules test only their own skills', () => {
   let oral = engine.newTablet('oral');
   assert.deepEqual(engine.nextStep(oral), { kind: 'receptive', skill: 'hoeren', level: 'preA1' });
   oral = engine.recordReceptive(oral, 'hoeren', 'a', 'perfect');
   assert.deepEqual(engine.nextStep(oral), { kind: 'receptive', skill: 'hoeren', level: 'A1' });
-  let writing = engine.newTablet('writing');
-  const levels = [];
-  for (let step = engine.nextStep(writing); step.kind !== 'finished'; step = engine.nextStep(writing)) {
-    assert.equal(step.kind, 'writing'); levels.push(step.level);
-    writing = engine.recordWriting(writing, schreibenTasks.find(task => task.level === step.level), 'x');
-  }
-  assert.deepEqual(levels, [...sdsLevels]);
   assert.equal(engine.nextStep(engine.closeTablet(engine.newTablet('full'))).kind, 'finished');
+  // Only the three real forms and their quick variants exist; results saved under a retired module still resolve.
+  assert.deepEqual(Object.keys(engine.moduleSkills).sort(), ['full', 'full-quick', 'oral', 'oral-quick', 'written', 'written-quick']);
+  assert.deepEqual(engine.skillsOf('writing'), { lesen: false, hoeren: false, schreiben: true, sprechen: false });
+  for (const id of ['full', 'written', 'oral']) {
+    assert.deepEqual(engine.moduleSkills[id + '-quick'], engine.moduleSkills[id]);
+    assert.equal(engine.moduleMinutes[id + '-quick'], Math.round(engine.moduleMinutes[id] / 4));
+  }
+});
+
+test('quick variants: one task per level, one writing task where reading stopped, then listening', () => {
+  let state = engine.newTablet('full-quick');
+  const seen = [];
+  const answer = outcome => {
+    const step = engine.nextStep(state);
+    seen.push(step.kind === 'receptive' ? step.skill + ':' + step.level : step.kind + ':' + (step.level ?? ''));
+    if (step.kind === 'receptive') state = engine.recordReceptive(state, step.skill, 'task-' + seen.length, outcome);
+    else if (step.kind === 'writing') state = engine.recordWriting(state, schreibenTasks.find(task => task.level === step.level), 'x');
+  };
+  // Reading: the cut score is enough to move up; a miss closes the skill at once.
+  answer('pass'); answer('perfect'); answer('fail');
+  assert.equal(state.lesen.done, true);
+  assert.equal(state.lesen.achieved, 'A1');
+  // One writing task, at the level reading stopped at, and no more after it.
+  answer();
+  assert.equal(state.writing.length, 1);
+  assert.equal(state.writing[0].level, 'A2');
+  // Listening starts from the bottom again.
+  answer('pass'); answer('fail');
+  assert.equal(state.hoeren.achieved, 'preA1');
+  assert.deepEqual(seen, ['lesen:preA1', 'lesen:A1', 'lesen:A2', 'writing:A2', 'hoeren:preA1', 'hoeren:A1']);
+  assert.equal(engine.nextStep(state).kind, 'finished');
+
+  // A candidate may skip the single writing task; the written module ends after it.
+  let written = engine.newTablet('written-quick');
+  written = engine.recordReceptive(written, 'lesen', 'r1', 'fail');
+  assert.deepEqual(engine.nextStep(written), { kind: 'writing', level: 'preA1' });
+  written = engine.recordWriting(written, schreibenTasks.find(task => task.level === 'preA1'), null);
+  assert.equal(engine.nextStep(written).kind, 'finished');
+
+  // Perfect reading reaches the top level and writes there; the oral module has no writing at all.
+  let top = engine.newTablet('written-quick');
+  for (const level of sdsLevels) top = engine.recordReceptive(top, 'lesen', 'top-' + level, 'perfect');
+  assert.equal(top.lesen.achieved, 'B2');
+  assert.deepEqual(engine.nextStep(top), { kind: 'writing', level: 'B2' });
+  assert.deepEqual(engine.nextStep(engine.newTablet('oral-quick')), { kind: 'receptive', skill: 'hoeren', level: 'preA1' });
+  assert.equal(engine.nextStep(engine.closeTablet(engine.newTablet('full-quick'))).kind, 'finished');
 });
 
 test('tasks are picked at the level, unused first', () => {

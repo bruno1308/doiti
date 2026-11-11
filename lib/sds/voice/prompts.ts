@@ -6,10 +6,16 @@ import { levelLabels, sdsLevels, type SdsLevel, type SpeakingTask } from "../typ
 /** One question set per level for this interview, plus the opening. */
 export type InterviewPlan = Record<SdsLevel, SpeakingTask>;
 
-export function examinerInstruction(plan: InterviewPlan): string {
+const QUICK_PREP_SECONDS = 30;
+const quickForm = `## Kurzform
+Dies ist ein Kurzinterview von etwa vier Minuten; das ersetzt die Zeitangabe in Punkt 8. Halte die Vorstellung kurz und frage dort höchstens einmal nach. Beginne danach direkt auf dem Niveau, das du nach der Vorstellung für das höchste erreichbare hältst, und stelle insgesamt höchstens zwei Aufgaben mit je einer Nachfrage. Bei B1 genügen zwei Beispiele.
+
+`;
+
+export function examinerInstruction(plan: InterviewPlan, quick = false): string {
   const sets = sdsLevels.map(level => {
     const task = plan[level];
-    return `### ${levelLabels[level]}\nAufgabe: «${task.prompt}»\nMögliche Nachfragen: ${task.followUps.map(q => `«${q}»`).join(" ")}${task.prepSeconds ? `\nVorbereitungszeit: ${task.prepSeconds} Sekunden (Tool start_preparation).` : ""}`;
+    return `### ${levelLabels[level]}\nAufgabe: «${task.prompt}»\nMögliche Nachfragen: ${task.followUps.map(q => `«${q}»`).join(" ")}${task.prepSeconds ? `\nVorbereitungszeit: ${quick ? QUICK_PREP_SECONDS : task.prepSeconds} Sekunden (Tool start_preparation).` : ""}`;
   }).join("\n\n");
   return `Du bist die Testleitung im mündlichen Teil (Interview) einer Simulation des Schweizerischen Digitalen Sprachtests (SDS). Du prüfst, du unterrichtest nicht. Eine Lehrperson bespricht das Interview danach mit der Kandidatin oder dem Kandidaten; das ist nicht deine Aufgabe.
 
@@ -35,7 +41,7 @@ export function examinerInstruction(plan: InterviewPlan): string {
 ## Deine Notizen (finish_interview)
 Du hast die Person gehört, die Lehrperson bekommt nur eine Abschrift, in der Fehler oft schon geglättet sind. Notiere deshalb, was du wirklich gehört hast: typische Fehler möglichst wörtlich (falsche Endungen, Wortstellung, Zeitformen, falsche Wörter), Stocken und lange Pausen, Selbstkorrekturen, wie zusammenhängend gesprochen wurde. Bewertet werden Wortschatz, Korrektheit, Flüssigkeit sowie Kohärenz und Kohäsion; die Aussprache ist kein Kriterium, solange man die Person versteht.
 
-## Aufgaben für dieses Interview
+${quick ? quickForm : ""}## Aufgaben für dieses Interview
 ${sets}`;
 }
 
@@ -95,6 +101,9 @@ export const examinerTools: VoiceTool[] = [
 
 export const INTERVIEW_SOFT_LIMIT_MS = 14 * 60_000;
 export const INTERVIEW_HARD_LIMIT_MS = 17 * 60_000;
+// The quick variants: about a quarter of the interview.
+export const QUICK_INTERVIEW_SOFT_LIMIT_MS = 3.5 * 60_000;
+export const QUICK_INTERVIEW_HARD_LIMIT_MS = 5 * 60_000;
 export const timeUpMessage = "Hinweis der App an die Testleitung: Die Interviewzeit ist um. Schliessen Sie die laufende Aufgabe ab, verabschieden Sie sich und rufen Sie finish_interview auf.";
 export const startMessage = "Hinweis der App an die Testleitung: Die Person ist bereit. Beginnen Sie jetzt mit der Begrüssung und der Einstiegsfrage.";
 export const teacherStartMessage = "Note from the app: the learner is listening. Start the debrief now.";

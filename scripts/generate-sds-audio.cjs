@@ -33,8 +33,12 @@ const extra = { f: ["annika"], m: [] };
 const narrators = ["lea", "otto", "ava", "ben"];
 // Slower at the lower levels, as in the real test. Applied without changing the pitch.
 const tempo = { preA1: 0.85, A1: 0.9, A2: 0.95, B1: 1, B2: 1 };
+// The picture tasks (vor A1, A1): the Testhandbuch asks for a slow reading (about 65 to 70 words a minute) and
+// three seconds of silence between the numbered lines. The delivery tag is a direction to the model, not spoken.
+const pictureLevels = ["preA1", "A1"];
+const SLOW_TAG = "[sehr langsam und deutlich] ";
 /** Seconds of silence between the lines of a text read by one voice. */
-const LIST_GAP = 0.9;
+const listGap = level => (pictureLevels.includes(level) ? 3 : 0.9);
 
 function genderOf(speaker) {
   if (/^(Frau|Moderatorin|Passantin|Sandra|Ursula)\b/.test(speaker)) return "f";
@@ -61,6 +65,8 @@ function cast(task, index) {
   }
   return roles;
 }
+
+const speakersOf = task => new Set(task.script.map(line => line.speaker ?? "")).size;
 
 function apiKey() {
   if (process.env.ELEVENLABS_API_KEY) return process.env.ELEVENLABS_API_KEY.trim();
@@ -105,18 +111,23 @@ async function record(task, roles, key, work) {
     const parts = [];
     for (const [number, line] of task.script.entries()) {
       const part = path.join(work, `${task.id}.${number}.mp3`);
-      fs.writeFileSync(part, await request(`https://api.elevenlabs.io/v1/text-to-speech/${voice}`, { model_id: MODEL, language_code: "de", text: line.text }, key));
+      fs.writeFileSync(part, await request(`https://api.elevenlabs.io/v1/text-to-speech/${voice}`, { model_id: MODEL, language_code: "de", text: `${pictureLevels.includes(task.level) ? SLOW_TAG : ""}${line.text}` }, key));
       parts.push(part);
     }
     if (parts.length === 1) fs.copyFileSync(parts[0], raw);
     else {
       const inputs = parts.flatMap(part => ["-i", part]);
-      const padded = parts.map((_, number) => `[${number}:a]aresample=44100,aformat=channel_layouts=mono,apad=pad_dur=${number < parts.length - 1 ? LIST_GAP : 0}[p${number}]`).join(";");
+      // Each clip brings some silence of its own: cut it, so that the pause between lines is exactly the one asked for.
+      const edge = "silenceremove=start_periods=1:start_threshold=-45dB";
+      const trim = `${edge},areverse,${edge},areverse`;
+      // The tempo change that follows stretches the pause too, so it is shortened by the same factor here.
+      const gap = (listGap(task.level) * tempo[task.level]).toFixed(3);
+      const padded = parts.map((_, number) => `[${number}:a]aresample=44100,aformat=channel_layouts=mono,${trim},apad=pad_dur=${number < parts.length - 1 ? gap : 0}[p${number}]`).join(";");
       const joined = `${parts.map((_, number) => `[p${number}]`).join("")}concat=n=${parts.length}:v=0:a=1[out]`;
       ffmpeg([...inputs, "-filter_complex", `${padded};${joined}`, "-map", "[out]", "-c:a", "libmp3lame", "-b:a", "128k", raw]);
     }
   }
-  const filters = [...(tempo[task.level] === 1 ? [] : [`atempo=${tempo[task.level]}`]), "loudnorm=I=-16:TP=-1.5:LRA=11"].join(",");
+    const filters = [...(tempo[task.level] === 1 ? [] : [`atempo=${tempo[task.level]}`]), "loudnorm=I=-16:TP=-1.5:LRA=11"].join(",");
   ffmpeg(["-i", raw, "-af", filters, "-ac", "1", "-ar", "44100", "-c:a", "libmp3lame", "-b:a", "96k", path.join(outDir, `${task.id}.mp3`)]);
 }
 
@@ -132,7 +143,7 @@ async function main() {
   let characters = 0;
   for (const [index, task] of tasks.entries()) {
     const roles = cast(task, index);
-    const hash = crypto.createHash("sha256").update(JSON.stringify([MODEL, tempo[task.level], task.script, Object.values(roles).map(name => voices[name].id)])).digest("hex").slice(0, 16);
+    const hash = crypto.createHash("sha256").update(JSON.stringify([MODEL, tempo[task.level], speakersOf(task) === 1 ? [listGap(task.level), pictureLevels.includes(task.level) ? SLOW_TAG : ""] : [], task.script, Object.values(roles).map(name => voices[name].id)])).digest("hex").slice(0, 16);
     const file = path.join(outDir, `${task.id}.mp3`);
     const wanted = only.length ? only.includes(task.id) : force || manifest[task.id]?.hash !== hash || !fs.existsSync(file);
     if (!wanted) continue;

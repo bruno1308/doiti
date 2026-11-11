@@ -39,22 +39,37 @@ export function advanceSkill(state: SkillState, outcome: TaskOutcome): SkillStat
   return { ...state, first: null, done: true };
 }
 
-export const moduleSkills: Record<SdsModule, { lesen: boolean; hoeren: boolean; schreiben: boolean; sprechen: boolean }> = {
-  full: { lesen: true, hoeren: true, schreiben: true, sprechen: true },
-  written: { lesen: true, hoeren: false, schreiben: true, sprechen: false },
-  oral: { lesen: false, hoeren: true, schreiben: false, sprechen: true },
+/** Quick practice: one task per level decides. Cut score reached → next level, otherwise the skill closes. */
+export function advanceQuick(state: SkillState, outcome: TaskOutcome): SkillState {
+  if (state.done) return state;
+  if (outcome === "fail") return { ...state, first: null, done: true };
+  const last = state.level === sdsLevels.length - 1;
+  return { level: last ? state.level : state.level + 1, first: null, done: last, achieved: sdsLevels[state.level] };
+}
+
+export interface ModuleSkills { lesen: boolean; hoeren: boolean; schreiben: boolean; sprechen: boolean }
+const whole: ModuleSkills = { lesen: true, hoeren: true, schreiben: true, sprechen: true };
+const writtenPart: ModuleSkills = { lesen: true, hoeren: false, schreiben: true, sprechen: false };
+const oralPart: ModuleSkills = { lesen: false, hoeren: true, schreiben: false, sprechen: true };
+export const moduleSkills: Record<SdsModule, ModuleSkills> = {
+  full: whole, written: writtenPart, oral: oralPart, "full-quick": whole, "written-quick": writtenPart, "oral-quick": oralPart,
+};
+/** Results saved before the single-skill modules were removed still name them. */
+const retiredSkills: Record<string, ModuleSkills> = {
   speaking: { lesen: false, hoeren: false, schreiben: false, sprechen: true },
   writing: { lesen: false, hoeren: false, schreiben: true, sprechen: false },
 };
-/** Minutes on the tablet, without the interview (Testhandbuch 7.6). */
-export const moduleMinutes: Record<SdsModule, number> = { full: 150, written: 105, oral: 45, speaking: 0, writing: 60 };
+export const skillsOf = (module: string): ModuleSkills => (moduleSkills as Record<string, ModuleSkills>)[module] ?? retiredSkills[module] ?? whole;
+export const isQuick = (module: SdsModule): boolean => module.endsWith("-quick");
+/** Minutes on the tablet, without the interview (Testhandbuch 7.6). The quick variants get a quarter of that. */
+export const moduleMinutes: Record<SdsModule, number> = { full: 150, written: 105, oral: 45, "full-quick": 38, "written-quick": 26, "oral-quick": 11 };
 
 export interface WritingAnswer { taskId: string; level: SdsLevel; text: string }
 export interface TabletState {
   module: SdsModule;
   lesen: SkillState;
   hoeren: SkillState;
-  /** Level index of the round in progress: Lesen, then one Schreiben task, then Hören. */
+  /** Level index of the round in progress: Lesen, then one Schreiben task, then Hören. Unused in the quick variants. */
   round: number;
   /** Whether this round's writing task has been handed out. */
   wroteThisRound: boolean;
@@ -78,8 +93,20 @@ export type TabletStep =
 
 const active = (skill: SkillState, round: number) => !skill.done && skill.level === round;
 
+/**
+ * Quick variants: every reading level in a row, then a single writing task at the level where reading stopped,
+ * then every listening level in a row.
+ */
+function nextQuickStep(s: TabletState): TabletStep {
+  if (!s.lesen.done) return { kind: "receptive", skill: "lesen", level: sdsLevels[s.lesen.level] };
+  if (!s.writingClosed) return { kind: "writing", level: sdsLevels[s.lesen.level] };
+  if (!s.hoeren.done) return { kind: "receptive", skill: "hoeren", level: sdsLevels[s.hoeren.level] };
+  return { kind: "finished" };
+}
+
 /** What the tablet shows next. Pure: call `skipEmptyRounds` first when a round may be exhausted. */
 export function nextStep(state: TabletState): TabletStep {
+  if (isQuick(state.module)) return nextQuickStep(state);
   const s = skipEmptyRounds(state);
   if (s.round >= sdsLevels.length) return { kind: "finished" };
   const level = sdsLevels[s.round];
@@ -91,6 +118,7 @@ export function nextStep(state: TabletState): TabletStep {
 
 /** Moves to the next level once nothing is left to do at the current one. */
 export function skipEmptyRounds(state: TabletState): TabletState {
+  if (isQuick(state.module)) return state;
   let s = state;
   while (s.round < sdsLevels.length) {
     const writingDue = !s.writingClosed && !s.wroteThisRound;
@@ -108,14 +136,18 @@ export function recordReceptive(state: TabletState, skill: ReceptiveSkill, taskI
   const s = skipEmptyRounds(state);
   // A task counts once, however often its answer is submitted.
   if (s.usedTasks.includes(taskId)) return s;
-  return skipEmptyRounds({ ...s, [skill]: advanceSkill(s[skill], outcome), usedTasks: [...s.usedTasks, taskId] });
+  const advance = isQuick(s.module) ? advanceQuick : advanceSkill;
+  return skipEmptyRounds({ ...s, [skill]: advance(s[skill], outcome), usedTasks: [...s.usedTasks, taskId] });
 }
 /** `text === null` means the candidate stops writing here ("an die eigene Leistungsgrenze"). */
 export function recordWriting(state: TabletState, task: WritingTask, text: string | null): TabletState {
   const s = skipEmptyRounds(state);
   if (s.usedTasks.includes(task.id) || s.writingClosed) return s;
+  // The quick variants have a single writing task, so writing closes whether or not it was answered.
   const next = text === null
     ? { ...s, writingClosed: true }
+    : isQuick(s.module)
+    ? { ...s, writingClosed: true, writing: [...s.writing, { taskId: task.id, level: task.level, text }], usedTasks: [...s.usedTasks, task.id] }
     : { ...s, wroteThisRound: true, writing: [...s.writing, { taskId: task.id, level: task.level, text }], usedTasks: [...s.usedTasks, task.id] };
   return skipEmptyRounds(next);
 }

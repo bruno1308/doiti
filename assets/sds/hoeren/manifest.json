@@ -1,82 +1,82 @@
 {
   "H-preA1-1": {
-    "hash": "accc6713b5657041",
+    "hash": "16f2dcc6fe5f704e",
     "voices": {
       "": "lea"
     }
   },
   "H-A2-2": {
-    "hash": "25059e1fa7106a46",
+    "hash": "378eb255953c0946",
     "voices": {
       "Herr Demir": "ben",
       "Passantin": "ava"
     }
   },
   "H-preA1-2": {
-    "hash": "879e3802c97ca685",
+    "hash": "bbb7b1ca686b0b28",
     "voices": {
       "": "otto"
     }
   },
   "H-preA1-3": {
-    "hash": "4b1e966373ee422c",
+    "hash": "d7f07c394b090d40",
     "voices": {
       "": "ava"
     }
   },
   "H-A1-1": {
-    "hash": "2e54afc254c5e05a",
+    "hash": "fa79fb53ac0fdcaf",
     "voices": {
       "": "ben"
     }
   },
   "H-A1-2": {
-    "hash": "8bd32d5171ccf8e4",
+    "hash": "5ec75cb354a31eb7",
     "voices": {
       "": "lea"
     }
   },
   "H-A1-3": {
-    "hash": "6e3fa5de4be01afc",
+    "hash": "c1657507de946a36",
     "voices": {
       "": "otto"
     }
   },
   "H-A2-1": {
-    "hash": "39ed591687fb0c86",
+    "hash": "0ded499b440d1313",
     "voices": {
       "Durchsage": "otto"
     }
   },
   "H-A2-3": {
-    "hash": "c4ca1e8dcf923bf6",
+    "hash": "a0decdef928cb995",
     "voices": {
       "Frau Keller": "lea"
     }
   },
   "H-B1-1": {
-    "hash": "987fab2209575e6a",
+    "hash": "fd2731938211dfdd",
     "voices": {
       "Herr Bühler": "ben",
       "Frau Novak": "ava"
     }
   },
   "H-B1-2": {
-    "hash": "bb82c7273c7f84f9",
+    "hash": "8bbb60de3d5c2652",
     "voices": {
       "Frau Stalder": "lea",
       "Herr Okafor": "otto"
     }
   },
   "H-B1-3": {
-    "hash": "84046ed5905ed1d9",
+    "hash": "98348435fce443cd",
     "voices": {
       "Herr Brunner": "ben",
       "Frau Aydin": "ava"
     }
   },
   "H-B2-1": {
-    "hash": "b774445c65554753",
+    "hash": "a3fe4d352b076b09",
     "voices": {
       "Moderatorin": "lea",
       "Herr Camenzind": "otto",
@@ -84,7 +84,7 @@
     }
   },
   "H-B2-2": {
-    "hash": "266b86d0cddc1c41",
+    "hash": "82e569bbff35ba6d",
     "voices": {
       "Moderator": "ben",
       "Herr Zbinden": "otto",
@@ -92,7 +92,7 @@
     }
   },
   "H-B2-3": {
-    "hash": "482ffa3b03c6e242",
+    "hash": "fd9d608705342cb4",
     "voices": {
       "Moderatorin": "lea",
       "Sandra Gerber": "ava",

@@ -9,7 +9,7 @@ import type { ExaminerNotes, FeedbackLanguage, SpeakingReport, TranscriptTurn } 
 import { levelLabels, sdsLevels } from "../../lib/sds/types";
 import { voiceAudio } from "../../lib/sds/voice/audio";
 import { VoiceConversation, type VoiceStatus } from "../../lib/sds/voice/conversation";
-import { examinerInstruction, examinerTools, INTERVIEW_HARD_LIMIT_MS, INTERVIEW_SOFT_LIMIT_MS, startMessage, teacherInstruction, teacherStartMessage, timeUpMessage, type InterviewPlan } from "../../lib/sds/voice/prompts";
+import { examinerInstruction, examinerTools, INTERVIEW_HARD_LIMIT_MS, INTERVIEW_SOFT_LIMIT_MS, QUICK_INTERVIEW_HARD_LIMIT_MS, QUICK_INTERVIEW_SOFT_LIMIT_MS, startMessage, teacherInstruction, teacherStartMessage, timeUpMessage, type InterviewPlan } from "../../lib/sds/voice/prompts";
 import useReducedMotion from "../../lib/useReducedMotion";
 import { SpeakingReportView } from "./Reports";
 import { Button, ui } from "./ui";
@@ -55,8 +55,11 @@ function SoloPractice({ reason, onDone }: { reason: string; onDone: () => void }
 
 const clip = (value: unknown, max: number) => String(value ?? "").slice(0, max);
 
-export default function Interview({ server, onDone, onReport }: {
-  server: SdsServer; onDone: (report: SpeakingReport | null) => void;
+export default function Interview({ server, quick = false, onDone, onReport }: {
+  server: SdsServer;
+  /** The short practice form: about four minutes instead of fifteen. */
+  quick?: boolean;
+  onDone: (report: SpeakingReport | null) => void;
   /** Called as soon as an assessment exists, so it survives leaving the screen. */
   onReport?: (report: SpeakingReport) => void;
 }) {
@@ -151,7 +154,7 @@ export default function Interview({ server, onDone, onReport }: {
     conversation.current = live;
     try {
       await live.start(mode === "exam"
-        ? { systemInstruction: examinerInstruction(plan), tools: examinerTools, voices: { openai: "marin", gemini: "Kore" }, language: "de" }
+        ? { systemInstruction: examinerInstruction(plan, quick), tools: examinerTools, voices: { openai: "marin", gemini: "Kore" }, language: "de" }
         : { systemInstruction: teacherInstruction(report!, transcript.current, language), tools: [], voices: { openai: "cedar", gemini: "Aoede" } },
       () => fetchLiveToken(server), mode === "exam" ? startMessage : teacherStartMessage);
     } catch (failure) {
@@ -172,19 +175,19 @@ export default function Interview({ server, onDone, onReport }: {
       const ms = live.elapsedMs;
       setElapsed(ms);
       if (phase !== "exam") return;
-      if (ms > INTERVIEW_HARD_LIMIT_MS) endExam();
-      else if (ms > INTERVIEW_SOFT_LIMIT_MS && !warned.current) { warned.current = true; live.notify(timeUpMessage); }
+      if (ms > (quick ? QUICK_INTERVIEW_HARD_LIMIT_MS : INTERVIEW_HARD_LIMIT_MS)) endExam();
+      else if (ms > (quick ? QUICK_INTERVIEW_SOFT_LIMIT_MS : INTERVIEW_SOFT_LIMIT_MS) && !warned.current) { warned.current = true; live.notify(timeUpMessage); }
     }, 500);
     return () => clearInterval(timer);
-  }, [phase, endExam]);
+  }, [phase, endExam, quick]);
 
-  if (!serverReady(server)) return <SoloPractice reason="The voice examiner needs the Doiti server. Add its address and access code under Settings → SDS voice examiner." onDone={() => onDone(null)} />;
+  if (!serverReady(server)) return <SoloPractice reason="The voice examiner needs the Doiti server. Enter your access code on the SDS test page." onDone={() => onDone(null)} />;
   if (!voiceAudio.supported) return <SoloPractice reason="The voice examiner runs in the web app for now (also when installed to your home screen). This build cannot stream the microphone yet." onDone={() => onDone(null)} />;
 
   if (phase === "intro") return <ScrollView style={ui.screen} contentContainerStyle={ui.content}>
     <Text accessibilityRole="header" style={ui.title}>Interview</Text>
     <View style={ui.card}>
-      <Text style={ui.body}>You will talk with an examiner for about 10 to 15 minutes, in German only. It starts with «{openingQuestion}» and then moves up through the levels until you reach your limit.</Text>
+      <Text style={ui.body}>You will talk with an examiner for about {quick ? "4" : "10 to 15"} minutes, in German only. It starts with «{openingQuestion}» and then {quick ? "goes straight to one or two tasks near your level" : "moves up through the levels until you reach your limit"}.</Text>
       <Text style={ui.body}>The examiner will not help or correct you. Afterwards you get a written assessment against the official criteria, and a teacher will talk it through with you.</Text>
       <Text style={ui.help}>Find a quiet place. Headphones give the best result. Your voice is sent to the voice service during the conversation; the app keeps only the transcript.</Text>
     </View>

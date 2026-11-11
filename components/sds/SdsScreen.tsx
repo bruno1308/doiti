@@ -5,7 +5,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { colors } from "../../constants/theme";
 import { schreibenTasks } from "../../data/sds/schreiben";
 import { getSdsResults, getSdsServer, gradeWriting, normalizeServer, saveSdsResult, saveSdsServer, serverReady, type SdsServer } from "../../lib/sds/api";
-import { moduleMinutes, moduleSkills, writingLevel, type WritingAnswer } from "../../lib/sds/engine";
+import { isQuick, moduleSkills, skillsOf, writingLevel, type WritingAnswer } from "../../lib/sds/engine";
 import type { SdsResult, SpeakingReport, WritingReport } from "../../lib/sds/report";
 import { levelLabels, skillLabels, type SdsLevel, type SdsModule, type SdsSkill } from "../../lib/sds/types";
 import { recordSession } from "../../lib/stats";
@@ -16,13 +16,19 @@ import { Button, LevelBadge, ui } from "./ui";
 
 const modules: { id: SdsModule; title: string; detail: string; icon: React.ComponentProps<typeof Ionicons>["name"] }[] = [
   { id: "full", title: "Full test", detail: "Lesen, Schreiben, Hören, then the interview · up to 2 h 45", icon: "school-outline" },
-  { id: "speaking", title: "Interview only", detail: "Voice examiner, assessment and teacher debrief · about 15 min", icon: "mic-outline" },
   { id: "written", title: "Written module", detail: "Lesen and Schreiben · up to 1 h 45", icon: "create-outline" },
   { id: "oral", title: "Oral module", detail: "Hören, then the interview · up to 1 h", icon: "ear-outline" },
-  { id: "writing", title: "Writing only", detail: "One task per level, from the form to the 200-word text", icon: "document-text-outline" },
 ];
+// The same three parts in a quarter of the time: one task per level, one writing task, a four-minute interview.
+const quickModules: typeof modules = [
+  { id: "full-quick", title: "Quick full test", detail: "All four skills · about 40 min", icon: "school-outline" },
+  { id: "written-quick", title: "Quick written module", detail: "Lesen and one Schreiben task · about 25 min", icon: "create-outline" },
+  { id: "oral-quick", title: "Quick oral module", detail: "Hören, then a short interview · about 15 min", icon: "ear-outline" },
+];
+/** Results saved before the single-skill modules were removed still name them. */
+const retiredTitles: Record<string, string> = { speaking: "Interview only", writing: "Writing only" };
 const skills: SdsSkill[] = ["lesen", "hoeren", "schreiben", "sprechen"];
-const moduleTitle = (id: SdsModule) => modules.find(item => item.id === id)!.title;
+const moduleTitle = (id: string) => [...modules, ...quickModules].find(item => item.id === id)?.title ?? retiredTitles[id] ?? "SDS test";
 
 function Review({ reviews }: { reviews: TaskReview[] }) {
   const [open, setOpen] = useState<string | null>(null);
@@ -129,7 +135,7 @@ function Results({ result, reviews, answers, server, onChange, onClose }: {
     if (serverReady(server)) void grade(); else setGrading("self");
   }, [pending, server, grade]);
 
-  const tested = skills.filter(skill => moduleSkills[result.module][skill]);
+  const tested = skills.filter(skill => skillsOf(result.module)[skill]);
   return <ScrollView style={ui.screen} contentContainerStyle={ui.content}>
     <Text accessibilityRole="header" style={ui.title}>Your result</Text>
     <View style={[ui.card, styles.levels]}>{tested.map(skill => <View key={skill} style={styles.level}>
@@ -165,7 +171,7 @@ export default function SdsScreen() {
   const store = useCallback((next: SdsResult) => { setResult(next); saveSdsResult(next).then(refresh).catch(() => {}); }, [refresh]);
   const start = (id: SdsModule) => {
     tablet.current = null; spoken.current = null; setResult(null); setModule(id);
-    setPhase(moduleMinutes[id] > 0 ? "tablet" : "interview");
+    setPhase("tablet");
   };
   const conclude = useCallback((id: SdsModule, speaking: SdsResult["speaking"] | null) => {
     const done = tablet.current;
@@ -197,19 +203,24 @@ export default function SdsScreen() {
 
   if (phase === "tablet") return <Tablet key={module} module={module} onQuit={() => setPhase("home")}
     onFinish={done => { tablet.current = done; if (moduleSkills[module].sprechen) setPhase("interview"); else conclude(module, null); }} />;
-  if (phase === "interview") return <Interview server={server} onReport={report => { spoken.current = report; }} onDone={report => conclude(module, report)} />;
+  if (phase === "interview") return <Interview server={server} quick={isQuick(module)} onReport={report => { spoken.current = report; }} onDone={report => conclude(module, report)} />;
   if (phase === "results" && result) return <Results result={result} reviews={tablet.current?.reviews ?? []} answers={tablet.current?.state.writing ?? []} server={server}
     onChange={store} onClose={() => setPhase("home")} />;
 
+  const card = (item: (typeof modules)[number]) => <Pressable key={item.id} accessibilityRole="button" accessibilityLabel={item.title} onPress={() => start(item.id)}
+    style={({ pressed }) => [ui.card, styles.module, item.id === "full" && { backgroundColor: colors.goal }, pressed && ui.pressed]}>
+    <Ionicons name={item.icon} size={26} color={colors.primary} />
+    <View style={{ flex: 1, gap: 2 }}><Text style={ui.heading}>{item.title}</Text><Text style={ui.help}>{item.detail}</Text></View>
+    <Ionicons name="arrow-forward" size={18} color={colors.primary} />
+  </Pressable>;
   return <ScrollView style={ui.screen} contentContainerStyle={ui.content}>
     <Text accessibilityRole="header" style={ui.title}>SDS test simulation</Text>
     <Text style={ui.help}>Practise the Schweizerischer Digitaler Sprachtest: adaptive from vor A1 to B2, in the order of the real test. Tasks get harder while you solve them and each skill stops at your limit.</Text>
-    {modules.map(item => <Pressable key={item.id} accessibilityRole="button" accessibilityLabel={item.title} onPress={() => start(item.id)}
-      style={({ pressed }) => [ui.card, styles.module, item.id === "full" && { backgroundColor: colors.goal }, pressed && ui.pressed]}>
-      <Ionicons name={item.icon} size={26} color={colors.primary} />
-      <View style={{ flex: 1, gap: 2 }}><Text style={ui.heading}>{item.title}</Text><Text style={ui.help}>{item.detail}</Text></View>
-      <Ionicons name="arrow-forward" size={18} color={colors.primary} />
-    </Pressable>)}
+    <Text accessibilityRole="header" style={ui.label}>As in the real test</Text>
+    {modules.map(card)}
+    <Text accessibilityRole="header" style={ui.label}>Quick practice · a quarter of the time</Text>
+    <Text style={ui.help}>The same three parts, shortened: one task per level instead of up to two, a single writing task at the level where your reading stopped, and a four-minute interview. The result is a rougher estimate.</Text>
+    {quickModules.map(card)}
     {!serverReady(server) && <AccessCode server={server} onSaved={setServer} />}
     {history.length > 0 && <View style={ui.card}>
       <Text style={ui.heading}>Past results</Text>

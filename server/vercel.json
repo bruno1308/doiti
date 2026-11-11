@@ -1,0 +1,7 @@
+{
+  "functions": {
+    "api/grade-speaking.ts": { "maxDuration": 300 },
+    "api/grade-writing.ts": { "maxDuration": 300 },
+    "api/token.ts": { "maxDuration": 30 }
+  }
+}

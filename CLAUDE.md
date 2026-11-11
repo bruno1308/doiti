@@ -6,12 +6,21 @@ Android app built with React Native + Expo to practice German grammar. Three exe
 2. **Adjective Endings** - Fill-in-the-blank adjective declension
 3. **Case Identification** - Identify grammatical case of each noun phrase in a sentence
 
+## SDS test simulation
+Simulates the Swiss SDS (Schweizerischer Digitaler Sprachtest), vor A1 to B2. Rules come from the public Testhandbuch; all items are original.
+- `lib/sds/engine.ts` – adaptive rules (100 % → next level; cut score → second task; one writing task per level). The 60 % cut score is our own estimate.
+- `data/sds/` – Lesen, Hören, Schreiben and Sprechen task banks, Swiss spelling (no ß).
+- `components/sds/` – screens; route `app/(tabs)/sds.tsx`.
+- Hören is read by the device's German voice (`expo-speech`), so it works offline.
+- `lib/sds/voice/` – voice examiner and teacher over the Gemini Live API (web only for now; native builds show the prompts for solo practice).
+- `server/` – separate Vercel project (token minting and AI rating). The only part of the app that needs internet; see `server/README.md`.
+
 ## Tech Stack
 - **React Native** with **Expo** (managed workflow)
 - **TypeScript**
 - **Expo Router** for navigation
 - **AsyncStorage** for local progress tracking
-- **No backend** - fully offline, all data bundled
+- **No backend** for practice - offline, all data bundled (exception: the SDS voice examiner and AI rating, see above)
 
 ## APK Generation
 Use `eas build -p android --profile preview` to generate an installable APK.

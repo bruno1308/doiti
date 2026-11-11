@@ -23,6 +23,7 @@ export default function TabLayout() {
       <Tabs.Screen name="topics" options={{ title: "Grammar library", href: null }} />
       <Tabs.Screen name="overall-a1" options={{ title: "Overall A1", href: null }} />
       <Tabs.Screen name="overall-a2" options={{ title: "Overall A2", href: null }} />
+      <Tabs.Screen name="sds" options={{ title: "SDS test", href: null }} />
       <Tabs.Screen
         name="index"
         options={{

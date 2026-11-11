@@ -1,6 +1,6 @@
 import type { ExerciseMode } from "../lib/types";
 
-export type PracticeMode = Exclude<ExerciseMode, "overall-a1" | "overall-a2">;
+export type PracticeMode = Exclude<ExerciseMode, "overall-a1" | "overall-a2" | "sds">;
 export type FocusedMode = Exclude<PracticeMode, "conversation">;
 export const practiceModes: { id: FocusedMode; title: string; subtitle: string; accent: string; icon: string }[] = [
   { id: "gender", title: "Der/Die/Das", subtitle: "Noun genders and compounds", accent: "#34576b", icon: "book-outline" },
@@ -28,5 +28,5 @@ export const allPracticeModes = [...practiceModes, { id: "conversation" as const
 
 export const modeNames: Record<ExerciseMode, string> = {
   ...Object.fromEntries(allPracticeModes.map(mode => [mode.id, mode.title])),
-  "overall-a1": "Overall A1", "overall-a2": "Overall A2",
+  "overall-a1": "Overall A1", "overall-a2": "Overall A2", sds: "SDS test",
 } as Record<ExerciseMode, string>;

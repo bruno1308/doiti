@@ -12,6 +12,7 @@ const decks = [
   { title: "Overall A2", face: "A2", detail: "Connect your ideas", route: "/overall-a2", color: colors.blue, ink: "#2b4352", mode: "overall-a2" },
   { title: "Conversation", face: "Hallo!", detail: "10 everyday scenarios", route: "/conversation", color: colors.peach, ink: "#653e2b", mode: "conversation" },
   { title: "Grammar", face: "der · die · das", detail: "19 focused decks", route: "/topics", color: colors.purple, ink: "#55405f", mode: null },
+  { title: "SDS test", face: "SDS", detail: "Swiss test simulation · vor A1 to B2 · voice examiner", route: "/sds", color: colors.goal, ink: colors.goalText, mode: null },
 ] as const;
 const shortcuts = [
   { label: "Articles", route: "/articles", icon: "text-outline" },

@@ -6,6 +6,7 @@ import { colors, cardEdge } from "../../constants/theme";
 import { kindLabels } from "../../lib/overall-logic";
 import { defaultPracticePreferences, practiceKinds, sessionLengths, type PracticePreferences } from "../../lib/practice-preferences";
 import { getPracticePreferences, savePracticePreferences } from "../../lib/settings";
+import ServerSettings from "../../components/sds/ServerSettings";
 
 const descriptions = {
   choice: "Pick an answer from four options.",
@@ -42,7 +43,7 @@ export default function SettingsScreen() {
     }).catch(() => { if (version === revision.current) setStatus("save-error"); });
   };
   const allStyles = preferences.kinds.length === practiceKinds.length;
-  return <ScrollView style={styles.screen} showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
+  return <ScrollView style={styles.screen} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
     <Text accessibilityRole="header" style={styles.title}>Make it your practice.</Text>
     <Text style={styles.help}>Tap a deck and jump straight in. These preferences apply to your next session.</Text>
     {status === "loading" ? <ActivityIndicator accessibilityLabel="Loading settings" color={colors.primary} /> : status === "load-error" ? <View style={styles.card}>
@@ -76,6 +77,7 @@ export default function SettingsScreen() {
       {status === "save-error" && <Pressable accessibilityRole="button" onPress={() => update(current.current)} style={styles.action}><Text style={styles.actionText}>Retry saving</Text></Pressable>}
       <Pressable accessibilityRole="button" onPress={() => update(defaultPracticePreferences())} style={styles.reset}><Text style={styles.label}>Restore defaults</Text></Pressable>
     </>}
+    <ServerSettings />
   </ScrollView>;
 }
 

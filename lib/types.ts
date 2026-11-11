@@ -36,7 +36,7 @@ export interface CaseSentence {
   translation: string;
 }
 
-export type ExerciseMode = "gender" | "adjectives" | "cases" | "possessives" | "articles" | "pronouns" | "praeteritum" | "perfekt" | "plurals" | "prepositions" | "modals" | "conditionals" | "connectors" | "separable" | "clauses" | "reflexive" | "passive" | "comparisons" | "word-pairs" | "conversation" | "overall-a1" | "overall-a2";
+export type ExerciseMode = "gender" | "adjectives" | "cases" | "possessives" | "articles" | "pronouns" | "praeteritum" | "perfekt" | "plurals" | "prepositions" | "modals" | "conditionals" | "connectors" | "separable" | "clauses" | "reflexive" | "passive" | "comparisons" | "word-pairs" | "conversation" | "overall-a1" | "overall-a2" | "sds";
 
 export interface PraeteritumExercise {
   id: number;

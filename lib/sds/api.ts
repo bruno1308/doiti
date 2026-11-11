@@ -6,7 +6,8 @@ const SERVER_KEY = "doiti_sds_server";
 const RESULTS_KEY = "doiti_sds_results";
 
 export interface SdsServer { url: string; code: string }
-const envUrl = (process.env.EXPO_PUBLIC_SDS_API_URL ?? "").trim();
+// The address is public; the access code is not, so it is never bundled and is entered once per device.
+const envUrl = (process.env.EXPO_PUBLIC_SDS_API_URL ?? "").trim() || "https://doiti-sds-server.vercel.app";
 
 export function normalizeServer(value: unknown): SdsServer {
   const raw = (value && typeof value === "object" ? value : {}) as Partial<SdsServer>;

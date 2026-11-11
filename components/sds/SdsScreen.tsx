@@ -1,11 +1,10 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
-import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { colors } from "../../constants/theme";
 import { schreibenTasks } from "../../data/sds/schreiben";
-import { getSdsResults, getSdsServer, gradeWriting, normalizeServer, saveSdsResult, serverReady, type SdsServer } from "../../lib/sds/api";
+import { getSdsResults, getSdsServer, gradeWriting, normalizeServer, saveSdsResult, saveSdsServer, serverReady, type SdsServer } from "../../lib/sds/api";
 import { moduleMinutes, moduleSkills, writingLevel, type WritingAnswer } from "../../lib/sds/engine";
 import type { SdsResult, SpeakingReport, WritingReport } from "../../lib/sds/report";
 import { levelLabels, skillLabels, type SdsLevel, type SdsModule, type SdsSkill } from "../../lib/sds/types";
@@ -16,10 +15,10 @@ import Tablet, { type TabletResult, type TaskReview } from "./Tablet";
 import { Button, LevelBadge, ui } from "./ui";
 
 const modules: { id: SdsModule; title: string; detail: string; icon: React.ComponentProps<typeof Ionicons>["name"] }[] = [
-  { id: "full", title: "Full test", detail: "Lesen, Schreiben, Hören, then the interview · up to 2 h 30 + 15 min", icon: "school-outline" },
+  { id: "full", title: "Full test", detail: "Lesen, Schreiben, Hören, then the interview · up to 2 h 45", icon: "school-outline" },
   { id: "speaking", title: "Interview only", detail: "Voice examiner, assessment and teacher debrief · about 15 min", icon: "mic-outline" },
   { id: "written", title: "Written module", detail: "Lesen and Schreiben · up to 1 h 45", icon: "create-outline" },
-  { id: "oral", title: "Oral module", detail: "Hören, then the interview · up to 45 + 15 min", icon: "ear-outline" },
+  { id: "oral", title: "Oral module", detail: "Hören, then the interview · up to 1 h", icon: "ear-outline" },
   { id: "writing", title: "Writing only", detail: "One task per level, from the form to the 200-word text", icon: "document-text-outline" },
 ];
 const skills: SdsSkill[] = ["lesen", "hoeren", "schreiben", "sprechen"];
@@ -51,6 +50,27 @@ function Review({ reviews }: { reviews: TaskReview[] }) {
         })}
       </View>}
     </View>)}
+  </View>;
+}
+
+const contact = "brunofernandeslopes@gmail.com";
+
+/** Shown until this device has the access code; the server address is already built in. */
+function AccessCode({ server, onSaved }: { server: SdsServer; onSaved: (server: SdsServer) => void }) {
+  const [code, setCode] = useState("");
+  const [failed, setFailed] = useState(false);
+  const save = () => {
+    const next = normalizeServer({ url: server.url, code });
+    saveSdsServer(next).then(() => onSaved(next)).catch(() => setFailed(true));
+  };
+  return <View style={ui.card}>
+    <Text style={ui.heading}>Enter your access code</Text>
+    <Text style={ui.help}>Reading and listening work offline. The interview and the AI rating of your writing need an access code, entered once on this device.</Text>
+    <TextInput accessibilityLabel="Access code" value={code} onChangeText={value => { setCode(value); setFailed(false); }} onSubmitEditing={() => { if (code.trim()) save(); }}
+      secureTextEntry autoCapitalize="none" autoCorrect={false} placeholder="Access code" placeholderTextColor={colors.textMuted} style={styles.input} />
+    {failed && <Text style={ui.error}>Could not save. Please retry.</Text>}
+    <Button title="Save" disabled={!code.trim()} onPress={save} />
+    <Text style={ui.help}>No code yet? Write to <Text accessibilityRole="link" style={styles.link} onPress={() => { void Linking.openURL(`mailto:${contact}?subject=Doiti%20access%20code`); }}>{contact}</Text> to ask for one.</Text>
   </View>;
 }
 
@@ -132,7 +152,6 @@ function Results({ result, reviews, answers, server, onChange, onClose }: {
 }
 
 export default function SdsScreen() {
-  const router = useRouter();
   const [phase, setPhase] = useState<"home" | "tablet" | "interview" | "results">("home");
   const [module, setModule] = useState<SdsModule>("full");
   const [server, setServer] = useState<SdsServer>(() => normalizeServer({}));
@@ -191,11 +210,7 @@ export default function SdsScreen() {
       <View style={{ flex: 1, gap: 2 }}><Text style={ui.heading}>{item.title}</Text><Text style={ui.help}>{item.detail}</Text></View>
       <Ionicons name="arrow-forward" size={18} color={colors.primary} />
     </Pressable>)}
-    {!serverReady(server) && <View style={ui.card}>
-      <Text style={ui.heading}>Voice examiner not set up</Text>
-      <Text style={ui.help}>Reading and listening work offline. The interview and the AI rating of your writing need the Doiti server address and access code.</Text>
-      <Button secondary title="Open settings" icon="options-outline" onPress={() => router.navigate("/settings")} />
-    </View>}
+    {!serverReady(server) && <AccessCode server={server} onSaved={setServer} />}
     {history.length > 0 && <View style={ui.card}>
       <Text style={ui.heading}>Past results</Text>
       {history.map(item => <View key={item.id} style={styles.past}>
@@ -207,6 +222,8 @@ export default function SdsScreen() {
 }
 
 const styles = StyleSheet.create({
+  link: { color: colors.primary, fontWeight: "700", textDecorationLine: "underline" },
+  input: { borderWidth: 1, borderColor: colors.border, borderRadius: 12, backgroundColor: "#fff", paddingHorizontal: 12, paddingVertical: 10, fontSize: 16, color: colors.text, minHeight: 46 },
   module: { flexDirection: "row", alignItems: "center", gap: 12 },
   levels: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-around", gap: 12 },
   level: { alignItems: "center", gap: 6, minWidth: 96 },

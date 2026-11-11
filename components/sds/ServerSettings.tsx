@@ -18,7 +18,7 @@ export default function ServerSettings() {
   const save = () => saveSdsServer({ url, code }).then(() => setStatus("saved")).catch(() => setStatus("error"));
   return <View style={ui.card}>
     <Text accessibilityRole="header" style={ui.heading}>SDS voice examiner</Text>
-    <Text style={ui.help}>The interview and the AI rating of your writing run through your own Doiti server. Reading and listening work without it.</Text>
+    <Text style={ui.help}>The interview and the AI rating of your writing need an access code. Reading and listening work without it. Change the server address only if you run your own server.</Text>
     <Text style={ui.label}>Server address</Text>
     <TextInput accessibilityLabel="Server address" value={url} onChangeText={value => { setUrl(value); setStatus("idle"); }} placeholder="https://your-project.vercel.app"
       placeholderTextColor={colors.textMuted} autoCapitalize="none" autoCorrect={false} keyboardType="url" style={styles.input} />

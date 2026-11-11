@@ -110,7 +110,7 @@ export default function Interview({ server, onDone, onReport }: {
   const begin = async (mode: "exam" | "teacher") => {
     setError(null); setStatus("connecting"); setElapsed(0); setCaptions([]); setPhase(mode);
     warned.current = false; notes.current = mode === "exam" ? null : notes.current; logged.current = mode === "exam" ? [] : logged.current;
-    const live = new VoiceConversation(voiceAudio, {
+    const live = new VoiceConversation({
       onStatus: value => { if (alive.current && conversation.current === live) setStatus(value); },
       onTranscript: turns => { if (alive.current && conversation.current === live && mode === "teacher") setCaptions(turns.slice(-4)); },
       onError: message => {
@@ -151,8 +151,8 @@ export default function Interview({ server, onDone, onReport }: {
     conversation.current = live;
     try {
       await live.start(mode === "exam"
-        ? { systemInstruction: examinerInstruction(plan), tools: examinerTools, voice: "Kore" }
-        : { systemInstruction: teacherInstruction(report!, transcript.current, language), voice: "Aoede" },
+        ? { systemInstruction: examinerInstruction(plan), tools: examinerTools, voices: { openai: "marin", gemini: "Kore" }, language: "de" }
+        : { systemInstruction: teacherInstruction(report!, transcript.current, language), tools: [], voices: { openai: "cedar", gemini: "Aoede" } },
       () => fetchLiveToken(server), mode === "exam" ? startMessage : teacherStartMessage);
     } catch (failure) {
       if (conversation.current !== live) return;

@@ -1,5 +1,6 @@
 import { openingQuestion } from "../../../data/sds/sprechen";
 import type { FeedbackLanguage, SpeakingReport, TranscriptTurn } from "../report";
+import type { VoiceTool } from "./link";
 import { levelLabels, sdsLevels, type SdsLevel, type SpeakingTask } from "../types";
 
 /** One question set per level for this interview, plus the opening. */
@@ -64,35 +65,33 @@ ${JSON.stringify(report)}
 ${spoken}`;
 }
 
-/** Gemini function declarations for the examiner session. */
-export const examinerTools = [{
-  functionDeclarations: [
-    {
-      name: "start_preparation",
-      description: "Startet die stille Vorbereitungszeit für die B2-Präsentation. Die App zeigt das Thema und eine Uhr und antwortet, wenn die Zeit um ist.",
-      parameters: { type: "OBJECT", properties: { topic: { type: "STRING", description: "Thema und Aufgabenstellung, wie sie angezeigt werden sollen." }, seconds: { type: "INTEGER" } }, required: ["topic", "seconds"] },
-    },
-    {
-      name: "log_task",
-      description: "Hält nach jeder abgeschlossenen Aufgabe fest, auf welchem Niveau sie war und ob sie inhaltlich bewältigt wurde.",
-      parameters: { type: "OBJECT", properties: { level: { type: "STRING", description: "vor A1, A1, A2, B1 oder B2" }, fulfilled: { type: "BOOLEAN" }, note: { type: "STRING" } }, required: ["level", "fulfilled", "note"] },
-    },
-    {
-      name: "finish_interview",
-      description: "Beendet das Interview nach der Verabschiedung und übergibt die Notizen der Testleitung.",
-      parameters: {
-        type: "OBJECT",
-        properties: {
-          level: { type: "STRING", description: "Eingeschätztes Niveau: unter vor A1, vor A1, A1, A2, B1 oder B2" },
-          heard_errors: { type: "ARRAY", items: { type: "STRING" }, description: "Fehler möglichst wörtlich, so wie sie gesprochen wurden." },
-          fluency: { type: "STRING", description: "Tempo, Stocken, Pausen, Selbstkorrekturen." },
-          notes: { type: "STRING", description: "Wortschatz, Korrektheit, Kohärenz und alles Weitere, was für die Bewertung wichtig ist." },
-        },
-        required: ["level", "heard_errors", "fluency", "notes"],
+/** Tools of the examiner session, as JSON Schema; each provider adapts them. */
+export const examinerTools: VoiceTool[] = [
+  {
+    name: "start_preparation",
+    description: "Startet die stille Vorbereitungszeit für die B2-Präsentation. Die App zeigt das Thema und eine Uhr und antwortet, wenn die Zeit um ist.",
+    parameters: { type: "object", properties: { topic: { type: "string", description: "Thema und Aufgabenstellung, wie sie angezeigt werden sollen." }, seconds: { type: "integer" } }, required: ["topic", "seconds"] },
+  },
+  {
+    name: "log_task",
+    description: "Hält nach jeder abgeschlossenen Aufgabe fest, auf welchem Niveau sie war und ob sie inhaltlich bewältigt wurde.",
+    parameters: { type: "object", properties: { level: { type: "string", description: "vor A1, A1, A2, B1 oder B2" }, fulfilled: { type: "boolean" }, note: { type: "string" } }, required: ["level", "fulfilled", "note"] },
+  },
+  {
+    name: "finish_interview",
+    description: "Beendet das Interview nach der Verabschiedung und übergibt die Notizen der Testleitung.",
+    parameters: {
+      type: "object",
+      properties: {
+        level: { type: "string", description: "Eingeschätztes Niveau: unter vor A1, vor A1, A1, A2, B1 oder B2" },
+        heard_errors: { type: "array", items: { type: "string" }, description: "Fehler möglichst wörtlich, so wie sie gesprochen wurden." },
+        fluency: { type: "string", description: "Tempo, Stocken, Pausen, Selbstkorrekturen." },
+        notes: { type: "string", description: "Wortschatz, Korrektheit, Kohärenz und alles Weitere, was für die Bewertung wichtig ist." },
       },
+      required: ["level", "heard_errors", "fluency", "notes"],
     },
-  ],
-}];
+  },
+];
 
 export const INTERVIEW_SOFT_LIMIT_MS = 14 * 60_000;
 export const INTERVIEW_HARD_LIMIT_MS = 17 * 60_000;

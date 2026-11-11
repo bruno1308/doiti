@@ -12,7 +12,7 @@ Simulates the Swiss SDS (Schweizerischer Digitaler Sprachtest), vor A1 to B2. Ru
 - `data/sds/` – Lesen, Hören, Schreiben and Sprechen task banks, Swiss spelling (no ß).
 - `components/sds/` – screens; route `app/(tabs)/sds.tsx`.
 - Hören is read by the device's German voice (`expo-speech`), so it works offline.
-- `lib/sds/voice/` – voice examiner and teacher over the Gemini Live API (web only for now; native builds show the prompts for solo practice).
+- `lib/sds/voice/` – voice examiner and teacher. `link.ts` is the provider interface: OpenAI Realtime over WebRTC (`openaiLink.ts`, default) or Gemini Live over a WebSocket (`geminiLink.ts`); the server's `VOICE_PROVIDER` decides. Web only for now; native builds show the prompts for solo practice.
 - `server/` – separate Vercel project (token minting and AI rating). The only part of the app that needs internet; see `server/README.md`.
 
 ## Tech Stack

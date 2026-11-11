@@ -13,6 +13,8 @@ const { schreibenTasks } = require('../data/sds/schreiben.ts');
 const { sprechenTasks } = require('../data/sds/sprechen.ts');
 const pcm = require('../lib/sds/voice/pcm.ts');
 const { modeNames } = require('../data/practice-modes.ts');
+const voice = require('../lib/sds/voice/conversation.ts');
+const { examinerTools } = require('../lib/sds/voice/prompts.ts');
 
 const run = (outcomes) => outcomes.reduce(engine.advanceSkill, engine.newSkill());
 
@@ -192,4 +194,37 @@ test('PCM helpers round-trip', () => {
 
 test('the SDS mode is named for the progress hub', () => {
   assert.equal(modeNames.sds, 'SDS test');
+});
+
+test('transcripts keep spoken order', () => {
+  let turns = voice.appendFragment([], 'examiner', ' Guten Tag.', 0);
+  turns = voice.appendFragment(turns, 'examiner', ' Wie heissen Sie?', 500);
+  turns = voice.appendFragment(turns, 'candidate', 'Ich heisse', 3000);
+  turns = voice.appendFragment(turns, 'examiner', 'Danke.', 6000);
+  turns = voice.appendFragment(turns, 'candidate', ' Ana.', 6400);          // late fragment of the earlier turn
+  assert.deepEqual(turns.map(turn => [turn.role, turn.text]), [['examiner', 'Guten Tag. Wie heissen Sie?'], ['candidate', 'Ich heisse Ana.'], ['examiner', 'Danke.']]);
+  const whole = voice.insertTurn([{ role: 'examiner', text: 'Frage', startMs: 0, endMs: 900 }, { role: 'examiner', text: 'Danke.', startMs: 5000, endMs: 5600 }], { role: 'candidate', text: 'Antwort', startMs: 2000, endMs: 4000 });
+  assert.deepEqual(whole.map(turn => turn.text), ['Frage', 'Antwort', 'Danke.']);
+});
+
+test('a voice conversation drives any provider through the same steps', async () => {
+  const log = [];
+  let handlers, config;
+  const link = { start: async () => { log.push('start'); handlers.onReady(); }, notify: text => log.push(`notify:${text}`), respondToTool: (call, response) => log.push(`tool:${call.name}:${response.result}`),
+    setMuted: muted => log.push(`muted:${muted}`), drained: async () => {}, close: () => log.push('close') };
+  const statuses = [];
+  const live = new voice.VoiceConversation({ onStatus: status => statuses.push(status), onTranscript: () => {}, onError: () => {}, onTool: async call => ({ result: `done ${call.args.seconds}` }) },
+    provider => (linkConfig, linkHandlers) => { log.push(`provider:${provider}`); config = linkConfig; handlers = linkHandlers; return link; });
+  await live.start({ systemInstruction: 'sys', tools: examinerTools, voices: { openai: 'marin', gemini: 'Kore' }, language: 'de' }, async () => ({ provider: 'openai', token: 't', model: 'm' }), 'los');
+  assert.equal(config.voice, 'marin');
+  assert.deepEqual(examinerTools.map(tool => tool.name), ['start_preparation', 'log_task', 'finish_interview']);
+  assert.ok(examinerTools.every(tool => tool.parameters.type === 'object'));
+  handlers.onSpeaking(true); handlers.onOutputText('Guten Tag.'); handlers.onSpeaking(false);
+  handlers.onInputTurn('Hallo', Date.now() - 50, Date.now());
+  handlers.onToolCall({ id: '1', name: 'start_preparation', args: { seconds: 90 } });
+  await new Promise(resolve => setTimeout(resolve, 10));
+  assert.deepEqual(live.transcript.map(turn => turn.role), ['examiner', 'candidate']);
+  live.end(); live.end();
+  assert.deepEqual(log, ['provider:openai', 'start', 'notify:los', 'muted:true', 'muted:false', 'tool:start_preparation:done 90', 'close']);
+  assert.deepEqual(statuses, ['listening', 'speaking', 'listening', 'paused', 'listening', 'ended']);
 });

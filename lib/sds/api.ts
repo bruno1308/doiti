@@ -45,7 +45,7 @@ async function post<T>(server: SdsServer, path: string, body: unknown, timeoutMs
   } finally { clearTimeout(timer); }
 }
 
-export interface LiveToken { token: string; model: string }
+export interface LiveToken { provider: "openai" | "gemini"; token: string; model: string }
 export const fetchLiveToken = (server: SdsServer) => post<LiveToken>(server, "token", {}, 20_000);
 
 export interface SpeakingGradeRequest {

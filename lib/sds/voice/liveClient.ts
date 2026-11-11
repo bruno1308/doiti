@@ -4,7 +4,9 @@
 const LIVE_URL = process.env.EXPO_PUBLIC_SDS_LIVE_URL?.trim()
   || "wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContentConstrained";
 
-export interface LiveToolCall { id: string; name: string; args: Record<string, unknown> }
+import type { ToolCall } from "./link";
+
+export type LiveToolCall = ToolCall;
 export interface LiveHandlers {
   onReady(): void;
   /** Base64 16-bit little-endian PCM at 24 kHz. */

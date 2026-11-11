@@ -53,7 +53,13 @@ function SoloPractice({ reason, onDone }: { reason: string; onDone: () => void }
   </ScrollView>;
 }
 
-export default function Interview({ server, onDone }: { server: SdsServer; onDone: (report: SpeakingReport | null) => void }) {
+const clip = (value: unknown, max: number) => String(value ?? "").slice(0, max);
+
+export default function Interview({ server, onDone, onReport }: {
+  server: SdsServer; onDone: (report: SpeakingReport | null) => void;
+  /** Called as soon as an assessment exists, so it survives leaving the screen. */
+  onReport?: (report: SpeakingReport) => void;
+}) {
   const [phase, setPhase] = useState<Phase>("intro");
   const [language, setLanguage] = useState<FeedbackLanguage>("en");
   const [status, setStatus] = useState<VoiceStatus>("connecting");
@@ -70,21 +76,25 @@ export default function Interview({ server, onDone }: { server: SdsServer; onDon
   const warned = useRef(false);
   const alive = useRef(true);
   const plan = useMemo(() => Object.fromEntries(sdsLevels.map(level => [level, pickTask(sprechenTasks, level, [])!])) as InterviewPlan, []);
-  useEffect(() => () => { alive.current = false; conversation.current?.end(); prepDone.current?.(); }, []);
+  useEffect(() => { alive.current = true; return () => { alive.current = false; conversation.current?.end(); prepDone.current?.(); }; }, []);
 
   const grade = useCallback(async () => {
     setPhase("grading"); setError(null);
     try {
       const result = await gradeSpeaking(server, {
-        feedbackLanguage: language, transcript: transcript.current, examinerNotes: notes.current,
+        feedbackLanguage: language,
+        // Kept within the limits the server accepts.
+        transcript: transcript.current.slice(-400).map(turn => ({ ...turn, text: turn.text.slice(0, 6000) })),
+        // Ended early: the examiner's notes are missing, but the logged tasks still say which levels were tested.
+        examinerNotes: notes.current ?? (logged.current.length ? { level: "", tasks: logged.current.slice(0, 12), heardErrors: [], fluency: "", notes: "The interview was ended before the examiner closed it." } : null),
         tasks: sdsLevels.map(level => ({ level, prompt: plan[level].prompt })),
       });
       if (!alive.current) return;
-      setReport(result); setPhase("report");
+      setReport(result); onReport?.(result); setPhase("report");
     } catch (failure) {
       if (alive.current) setError(failure instanceof Error ? failure.message : "The assessment failed.");
     }
-  }, [language, plan, server]);
+  }, [language, onReport, plan, server]);
 
   const endExam = useCallback(() => {
     const live = conversation.current;
@@ -113,24 +123,24 @@ export default function Interview({ server, onDone }: { server: SdsServer; onDon
           const seconds = Math.min(180, Math.max(30, Number(call.args.seconds) || 90));
           setPrep({ topic: String(call.args.topic ?? plan.B2.prompt), left: seconds });
           await new Promise<void>(resolve => {
-            const timer = setInterval(() => setPrep(value => {
-              if (!value || value.left <= 1) { finish(); return null; }
-              return { ...value, left: value.left - 1 };
-            }), 1000);
+            let left = seconds;
             const finish = () => { clearInterval(timer); prepDone.current = null; setPrep(null); resolve(); };
+            const timer = setInterval(() => {
+              if (--left <= 0) finish(); else setPrep(value => value && { ...value, left });
+            }, 1000);
             prepDone.current = finish;
           });
           return { result: "Die Vorbereitungszeit ist um. Bitten Sie die Person zu beginnen." };
         }
         if (call.name === "log_task") {
-          logged.current.push({ level: String(call.args.level ?? ""), fulfilled: call.args.fulfilled === true, note: String(call.args.note ?? "") });
+          logged.current.push({ level: clip(call.args.level, 40), fulfilled: call.args.fulfilled === true, note: clip(call.args.note, 1000) });
           return { result: "ok" };
         }
         if (call.name === "finish_interview") {
           notes.current = {
-            level: String(call.args.level ?? ""), tasks: logged.current,
-            heardErrors: Array.isArray(call.args.heard_errors) ? call.args.heard_errors.map(String) : [],
-            fluency: String(call.args.fluency ?? ""), notes: String(call.args.notes ?? ""),
+            level: clip(call.args.level, 40), tasks: logged.current.slice(0, 12),
+            heardErrors: Array.isArray(call.args.heard_errors) ? call.args.heard_errors.slice(0, 60).map(item => clip(item, 400)) : [],
+            fluency: clip(call.args.fluency, 1500), notes: clip(call.args.notes, 3000),
           };
           if (conversation.current === live) endExam();
           return { result: "ok" };

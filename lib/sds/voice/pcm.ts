@@ -14,6 +14,29 @@ export function downsample(input: Float32Array, fromRate: number, toRate: number
   return output;
 }
 
+/** Streaming version: carries the remainder between frames so no samples are dropped at frame edges. */
+export function createDownsampler(fromRate: number, toRate: number): (frame: Float32Array) => Float32Array {
+  if (fromRate <= toRate) return frame => frame;
+  const ratio = fromRate / toRate;
+  let carry = new Float32Array(0);
+  let phase = 0;
+  return frame => {
+    const buffer = new Float32Array(carry.length + frame.length);
+    buffer.set(carry); buffer.set(frame, carry.length);
+    const output: number[] = [];
+    let position = phase;
+    for (; position + ratio <= buffer.length; position += ratio) {
+      const start = Math.floor(position), end = Math.max(start + 1, Math.floor(position + ratio));
+      let sum = 0;
+      for (let i = start; i < end; i++) sum += buffer[i];
+      output.push(sum / (end - start));
+    }
+    const used = Math.floor(position);
+    carry = buffer.slice(used); phase = position - used;
+    return Float32Array.from(output);
+  };
+}
+
 export function floatToPcm16(input: Float32Array): Uint8Array {
   const bytes = new Uint8Array(input.length * 2);
   const view = new DataView(bytes.buffer);

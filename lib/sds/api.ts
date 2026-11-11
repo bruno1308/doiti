@@ -13,7 +13,8 @@ export function normalizeServer(value: unknown): SdsServer {
   const url = typeof raw.url === "string" && raw.url.trim() ? raw.url.trim().replace(/\/+$/, "") : envUrl.replace(/\/+$/, "");
   return { url, code: typeof raw.code === "string" ? raw.code.trim() : "" };
 }
-export const serverReady = (server: SdsServer) => /^https?:\/\//.test(server.url) && server.code.length > 0;
+// The access code travels in a header, so plain http is only accepted for a server on this machine.
+export const serverReady = (server: SdsServer) => /^(https:\/\/|http:\/\/(localhost|127\.0\.0\.1)(:|\/|$))/.test(server.url) && server.code.length > 0;
 
 export async function getSdsServer(): Promise<SdsServer> {
   try { return normalizeServer(JSON.parse((await AsyncStorage.getItem(SERVER_KEY)) ?? "{}")); }

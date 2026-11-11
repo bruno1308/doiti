@@ -73,6 +73,34 @@ test('skills stop independently and the test ends when nothing is left', () => {
   assert.equal(state.writing.length, 1);
 });
 
+test('writing carries on after reading and listening have closed, until the candidate stops', () => {
+  let state = engine.newTablet('written');
+  state = engine.recordReceptive(state, 'lesen', 'a', 'fail');
+  state = engine.recordReceptive(state, 'lesen', 'b', 'fail');
+  const levels = [];
+  for (let step = engine.nextStep(state); step.kind !== 'finished'; step = engine.nextStep(state)) {
+    assert.equal(step.kind, 'writing'); levels.push(step.level);
+    const task = schreibenTasks.find(item => item.level === step.level);
+    state = engine.recordWriting(state, task, 'x');
+    assert.equal(engine.recordWriting(state, task, 'again'), state, 'a task counts once');
+  }
+  assert.deepEqual(levels, [...sdsLevels]);
+  const once = engine.recordReceptive(engine.newTablet('oral'), 'hoeren', 'h', 'pass');
+  assert.equal(engine.recordReceptive(once, 'hoeren', 'h', 'pass'), once, 'a double submit does not confirm a level');
+});
+
+test('the streaming downsampler drops nothing across frames', () => {
+  for (const rate of [48000, 44100, 16000]) {
+    const resample = pcm.createDownsampler(rate, 16000);
+    let out = 0;
+    for (let i = 0; i < 375; i++) out += resample(new Float32Array(128).fill(0.25)).length;   // 48 000 input samples
+    const expected = 48000 * 16000 / rate;
+    assert.ok(Math.abs(out - expected) <= 1, `${rate}: ${out} of ${expected}`);
+  }
+  const resample = pcm.createDownsampler(32000, 16000);
+  assert.deepEqual([...resample(Float32Array.from([1, 3, 5])), ...resample(Float32Array.from([7]))], [2, 6]);
+});
+
 test('modules test only their own skills; writing alone covers every level', () => {
   let oral = engine.newTablet('oral');
   assert.deepEqual(engine.nextStep(oral), { kind: 'receptive', skill: 'hoeren', level: 'preA1' });

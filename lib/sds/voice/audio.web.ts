@@ -1,5 +1,5 @@
 import type { Microphone, Speaker, VoiceAudio } from "./audio-types";
-import { downsample, floatToPcm16, fromBase64, pcm16ToFloat, toBase64 } from "./pcm";
+import { createDownsampler, floatToPcm16, fromBase64, pcm16ToFloat, toBase64 } from "./pcm";
 
 const TARGET_RATE = 16_000;
 const OUTPUT_RATE = 24_000;
@@ -19,13 +19,26 @@ async function openMicrophone(onChunk: (base64: string) => void): Promise<Microp
   if (!Context || !navigator.mediaDevices?.getUserMedia) throw new Error("This browser cannot record audio.");
   const stream = await navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
   const context = new Context();
+  let moduleUrl: string | null = null;
+  const release = () => {
+    stream.getTracks().forEach(track => track.stop());
+    if (moduleUrl) URL.revokeObjectURL(moduleUrl);
+    void context.close().catch(() => {});
+  };
+  // Anything failing after the microphone opened must switch it off again.
+  try { return await wire(stream, context, onChunk, url => { moduleUrl = url; }, release); }
+  catch (error) { release(); throw error; }
+}
+
+async function wire(stream: MediaStream, context: AudioContext, onChunk: (base64: string) => void, keepUrl: (url: string) => void, release: () => void): Promise<Microphone> {
   await context.resume();
   const source = context.createMediaStreamSource(stream);
+  const resample = createDownsampler(context.sampleRate, TARGET_RATE);
   let muted = false;
   let pending = new Float32Array(0);
   const accept = (frame: Float32Array) => {
     if (muted) return;
-    const samples = downsample(frame, context.sampleRate, TARGET_RATE);
+    const samples = resample(frame);
     const joined = new Float32Array(pending.length + samples.length);
     joined.set(pending); joined.set(samples, pending.length);
     let offset = 0;
@@ -33,9 +46,9 @@ async function openMicrophone(onChunk: (base64: string) => void): Promise<Microp
     pending = joined.slice(offset);
   };
   let node: AudioNode;
-  let moduleUrl: string | null = null;
   if (context.audioWorklet) {
-    moduleUrl = URL.createObjectURL(new Blob([workletSource], { type: "application/javascript" }));
+    const moduleUrl = URL.createObjectURL(new Blob([workletSource], { type: "application/javascript" }));
+    keepUrl(moduleUrl);
     await context.audioWorklet.addModule(moduleUrl);
     const worklet = new AudioWorkletNode(context, "doiti-mic");
     worklet.port.onmessage = event => accept(event.data as Float32Array);
@@ -51,12 +64,7 @@ async function openMicrophone(onChunk: (base64: string) => void): Promise<Microp
   source.connect(node); node.connect(silence); silence.connect(context.destination);
   return {
     setMuted(value) { muted = value; if (value) pending = new Float32Array(0); },
-    stop() {
-      stream.getTracks().forEach(track => track.stop());
-      source.disconnect(); node.disconnect(); silence.disconnect();
-      if (moduleUrl) URL.revokeObjectURL(moduleUrl);
-      void context.close().catch(() => {});
-    },
+    stop() { source.disconnect(); node.disconnect(); silence.disconnect(); release(); },
   };
 }
 

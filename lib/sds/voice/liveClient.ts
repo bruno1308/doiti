@@ -34,6 +34,10 @@ export class LiveSession {
   private ready = false;
   private closed = false;
   private reconnects = 0;
+  private started = false;
+  private rollover: ReturnType<typeof setTimeout> | null = null;
+  /** Text and tool responses that must not be lost while the connection is being replaced. */
+  private pending: unknown[] = [];
 
   constructor(private readonly config: LiveConfig, private readonly handlers: LiveHandlers) {}
 
@@ -49,7 +53,7 @@ export class LiveSession {
       if (this.socket !== socket || this.closed) return;
       // Connections last about ten minutes; the session carries on with its resumption handle.
       if (this.handle && this.reconnects < MAX_RECONNECTS) { this.reconnects++; this.connect(); }
-      else { this.closed = true; this.handlers.onError(this.ready ? "The connection to the examiner was lost." : "Could not connect to the voice service."); }
+      else { this.closed = true; this.handlers.onError(this.started ? "The connection to the examiner was lost." : "Could not connect to the voice service."); }
     };
   }
 
@@ -80,14 +84,15 @@ export class LiveSession {
     } catch { return; }
     if (this.socket !== socket || this.closed) return;
     if (message.setupComplete) {
-      const first = !this.ready && this.reconnects === 0;
       this.ready = true;
-      if (first) this.handlers.onReady();
+      for (const queued of this.pending.splice(0)) socket.send(JSON.stringify(queued));
+      if (!this.started) { this.started = true; this.handlers.onReady(); }
       return;
     }
     const update = message.sessionResumptionUpdate;
     if (update?.resumable && update.newHandle) this.handle = update.newHandle;
-    if (message.goAway && this.handle) { this.reconnects = 0; socket.close(); return; }
+    // goAway is an advance warning: switch connections at the next pause, or shortly, whichever comes first.
+    if (message.goAway && this.handle && !this.rollover) this.rollover = setTimeout(() => this.replace(socket), 4000);
     if (message.toolCall?.functionCalls) {
       for (const call of message.toolCall.functionCalls) this.handlers.onToolCall({ id: call.id, name: call.name, args: call.args ?? {} });
     }
@@ -99,11 +104,19 @@ export class LiveSession {
     for (const part of content.modelTurn?.parts ?? []) {
       if (part.inlineData?.data && String(part.inlineData.mimeType ?? "audio/pcm").startsWith("audio/")) this.handlers.onAudio(part.inlineData.data);
     }
-    if (content.turnComplete) this.handlers.onTurnComplete();
+    if (content.turnComplete) { this.handlers.onTurnComplete(); if (this.rollover) this.replace(socket); }
   }
 
-  private send(message: unknown): boolean {
-    if (!this.ready || this.socket?.readyState !== 1) return false;
+  private replace(socket: WebSocket) {
+    if (this.rollover) { clearTimeout(this.rollover); this.rollover = null; }
+    if (this.socket !== socket || this.closed) return;
+    this.reconnects = 0; this.ready = false;
+    socket.close();
+  }
+
+  private send(message: unknown, keep = false): boolean {
+    if (this.closed) return false;
+    if (!this.ready || this.socket?.readyState !== 1) { if (keep) this.pending.push(message); return keep; }
     this.socket.send(JSON.stringify(message));
     return true;
   }
@@ -111,12 +124,13 @@ export class LiveSession {
   sendAudio(base64: string): void { this.send({ realtimeInput: { audio: { data: base64, mimeType: "audio/pcm;rate=16000" } } }); }
   /** Tells the server the microphone is paused so it does not wait for more speech. */
   pauseAudio(): void { this.send({ realtimeInput: { audioStreamEnd: true } }); }
-  sendText(text: string): boolean { return this.send({ clientContent: { turns: [{ role: "user", parts: [{ text }] }], turnComplete: true } }); }
+  sendText(text: string): boolean { return this.send({ clientContent: { turns: [{ role: "user", parts: [{ text }] }], turnComplete: true } }, true); }
   respondToTool(call: LiveToolCall, response: Record<string, unknown>): boolean {
-    return this.send({ toolResponse: { functionResponses: [{ id: call.id, name: call.name, response }] } });
+    return this.send({ toolResponse: { functionResponses: [{ id: call.id, name: call.name, response }] } }, true);
   }
   close(): void {
     this.closed = true;
+    if (this.rollover) clearTimeout(this.rollover);
     const socket = this.socket;
     this.socket = null;
     try { socket?.close(); } catch {}

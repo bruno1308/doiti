@@ -7,7 +7,7 @@ import { colors } from "../../constants/theme";
 import { schreibenTasks } from "../../data/sds/schreiben";
 import { getSdsResults, getSdsServer, gradeWriting, normalizeServer, saveSdsResult, serverReady, type SdsServer } from "../../lib/sds/api";
 import { moduleMinutes, moduleSkills, writingLevel, type WritingAnswer } from "../../lib/sds/engine";
-import type { SdsResult, WritingReport } from "../../lib/sds/report";
+import type { SdsResult, SpeakingReport, WritingReport } from "../../lib/sds/report";
 import { levelLabels, skillLabels, type SdsLevel, type SdsModule, type SdsSkill } from "../../lib/sds/types";
 import { recordSession } from "../../lib/stats";
 import Interview from "./Interview";
@@ -83,7 +83,7 @@ function Results({ result, reviews, answers, server, onChange, onClose }: {
   const [grading, setGrading] = useState<"idle" | "running" | "failed" | "self">("idle");
   const [problem, setProblem] = useState("");
   const alive = useRef(true);
-  useEffect(() => () => { alive.current = false; }, []);
+  useEffect(() => { alive.current = true; return () => { alive.current = false; }; }, []);
   const pending = answers.length > 0 && result.schreiben === undefined;
   const grade = useCallback(async () => {
     setGrading("running");
@@ -95,7 +95,9 @@ function Results({ result, reviews, answers, server, onChange, onClose }: {
           return { taskId: task.id, level: task.level, kind: task.kind, situation: task.situation, incoming: task.incoming?.text, points: task.points, minWords: task.minWords, text: answer.text };
         }),
       });
-      if (alive.current) { onChange({ ...result, schreiben: report.level, schreibenBy: "ai", writing: report }); setGrading("idle"); }
+      // The level shown is derived from the per-task verdicts, so the badge and the task cards cannot disagree.
+      const level = writingLevel(report.tasks);
+      if (alive.current) { onChange({ ...result, schreiben: level, schreibenBy: "ai", writing: { ...report, level } }); setGrading("idle"); }
     } catch (failure) {
       if (alive.current) { setProblem(failure instanceof Error ? failure.message : "The assessment failed."); setGrading("failed"); }
     }
@@ -137,17 +139,13 @@ export default function SdsScreen() {
   const [history, setHistory] = useState<SdsResult[]>([]);
   const [result, setResult] = useState<SdsResult | null>(null);
   const tablet = useRef<TabletResult | null>(null);
+  const spoken = useRef<SpeakingReport | null>(null);
 
   const refresh = useCallback(() => { getSdsResults().then(setHistory).catch(() => {}); getSdsServer().then(setServer).catch(() => {}); }, []);
-  // Leaving the screen ends a running test: a hidden screen must not keep the microphone or the audio going.
-  useFocusEffect(useCallback(() => {
-    refresh();
-    return () => setPhase(current => current === "results" ? current : "home");
-  }, [refresh]));
 
   const store = useCallback((next: SdsResult) => { setResult(next); saveSdsResult(next).then(refresh).catch(() => {}); }, [refresh]);
   const start = (id: SdsModule) => {
-    tablet.current = null; setResult(null); setModule(id);
+    tablet.current = null; spoken.current = null; setResult(null); setModule(id);
     setPhase(moduleMinutes[id] > 0 ? "tablet" : "interview");
   };
   const conclude = useCallback((id: SdsModule, speaking: SdsResult["speaking"] | null) => {
@@ -169,9 +167,18 @@ export default function SdsScreen() {
     setPhase("results");
   }, [store]);
 
+  // Leaving the screen ends a running test: a hidden screen must not keep the microphone or the audio going.
+  // Whatever is already finished (the tablet part, an assessed interview) is kept as a result.
+  const leave = useRef(() => {});
+  leave.current = () => {
+    if (phase === "interview" && (tablet.current || spoken.current)) conclude(module, spoken.current);
+    else if (phase !== "results") setPhase("home");
+  };
+  useFocusEffect(useCallback(() => { refresh(); return () => leave.current(); }, [refresh]));
+
   if (phase === "tablet") return <Tablet key={module} module={module} onQuit={() => setPhase("home")}
     onFinish={done => { tablet.current = done; if (moduleSkills[module].sprechen) setPhase("interview"); else conclude(module, null); }} />;
-  if (phase === "interview") return <Interview server={server} onDone={report => conclude(module, report)} />;
+  if (phase === "interview") return <Interview server={server} onReport={report => { spoken.current = report; }} onDone={report => conclude(module, report)} />;
   if (phase === "results" && result) return <Results result={result} reviews={tablet.current?.reviews ?? []} answers={tablet.current?.state.writing ?? []} server={server}
     onChange={store} onClose={() => setPhase("home")} />;
 

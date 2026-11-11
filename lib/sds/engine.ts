@@ -96,8 +96,8 @@ export function skipEmptyRounds(state: TabletState): TabletState {
     const writingDue = !s.writingClosed && !s.wroteThisRound;
     if (active(s.lesen, s.round) || active(s.hoeren, s.round) || writingDue) return s;
     const receptiveAhead = [s.lesen, s.hoeren].some(skill => !skill.done && skill.level > s.round);
-    // Writing has one task per level and carries on while the test does; on its own it runs through every level.
-    const writingAhead = !s.writingClosed && (receptiveAhead || s.module === "writing");
+    // Writing has one task per level and is never stopped automatically: only the candidate closes it.
+    const writingAhead = !s.writingClosed && moduleSkills[s.module].schreiben;
     if (!receptiveAhead && !writingAhead) return { ...s, round: sdsLevels.length };
     s = { ...s, round: s.round + 1, wroteThisRound: false };
   }
@@ -106,11 +106,14 @@ export function skipEmptyRounds(state: TabletState): TabletState {
 
 export function recordReceptive(state: TabletState, skill: ReceptiveSkill, taskId: string, outcome: TaskOutcome): TabletState {
   const s = skipEmptyRounds(state);
+  // A task counts once, however often its answer is submitted.
+  if (s.usedTasks.includes(taskId)) return s;
   return skipEmptyRounds({ ...s, [skill]: advanceSkill(s[skill], outcome), usedTasks: [...s.usedTasks, taskId] });
 }
 /** `text === null` means the candidate stops writing here ("an die eigene Leistungsgrenze"). */
 export function recordWriting(state: TabletState, task: WritingTask, text: string | null): TabletState {
   const s = skipEmptyRounds(state);
+  if (s.usedTasks.includes(task.id) || s.writingClosed) return s;
   const next = text === null
     ? { ...s, writingClosed: true }
     : { ...s, wroteThisRound: true, writing: [...s.writing, { taskId: task.id, level: task.level, text }], usedTasks: [...s.usedTasks, task.id] };

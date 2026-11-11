@@ -68,13 +68,15 @@ function Receptive({ task, onDone }: { task: ReceptiveTask; onDone: (answers: (n
   </>;
 }
 
-function Writing({ task, onDone }: { task: WritingTask; onDone: (text: string | null) => void }) {
+function Writing({ task, onDone, onDraft }: { task: WritingTask; onDone: (text: string | null) => void; onDraft: (text: string) => void }) {
   const [text, setText] = useState("");
   const [fields, setFields] = useState<string[]>(() => (task.fields ?? []).map(() => ""));
   const form = task.kind === "form";
   const answer = form ? task.fields!.map((label, i) => `${label}: ${fields[i].trim()}`).join("\n") : text.trim();
   const words = countWords(text);
   const empty = form ? fields.every(value => !value.trim()) : !text.trim();
+  // The parent keeps the draft so that running out of time does not lose it.
+  useEffect(() => { onDraft(empty ? "" : answer); }, [answer, empty, onDraft]);
   return <>
     <Text style={ui.german}>{task.situation}</Text>
     {task.incoming && <View style={styles.incoming}><Text style={ui.label}>{task.incoming.from}</Text><Text style={ui.german}>{task.incoming.text}</Text></View>}
@@ -98,6 +100,8 @@ export default function Tablet({ module, onFinish, onQuit }: { module: SdsModule
   const [remaining, setRemaining] = useState(moduleMinutes[module] * 60);
   const reviews = useRef<TaskReview[]>([]);
   const finished = useRef(false);
+  const draft = useRef<{ task: WritingTask; text: string } | null>(null);
+  const [quitting, setQuitting] = useState(false);
   const scroll = useRef<ScrollView>(null);
   const step = useMemo(() => nextStep(state), [state]);
   // The task for a step is chosen once and kept while the candidate works on it.
@@ -120,7 +124,12 @@ export default function Tablet({ module, onFinish, onQuit }: { module: SdsModule
     const timer = setInterval(() => setRemaining(value => Math.max(0, value - 1)), 1000);
     return () => clearInterval(timer);
   }, []);
-  useEffect(() => { if (remaining === 0) finish(closeTablet(latest.current)); }, [remaining, finish]);
+  useEffect(() => {
+    if (remaining !== 0) return;
+    // Time is up: whatever has been written so far is handed in.
+    const open = draft.current;
+    finish(closeTablet(open?.text ? recordWriting(latest.current, open.task, open.text) : latest.current));
+  }, [remaining, finish]);
   useEffect(() => { if (step.kind === "finished") finish(state); }, [step.kind, state, finish]);
   useEffect(() => { scroll.current?.scrollTo({ y: 0, animated: false }); }, [current?.id]);
 
@@ -136,14 +145,19 @@ export default function Tablet({ module, onFinish, onQuit }: { module: SdsModule
         <Ionicons name="time-outline" size={15} color={remaining < 300 ? colors.error : colors.textSecondary} />
         <Text style={[styles.clockText, remaining < 300 && { color: colors.error }]}>{clock(remaining)}</Text>
       </View>
-      <Pressable accessibilityRole="button" accessibilityLabel="Test beenden" onPress={onQuit} style={styles.quit}><Ionicons name="close" size={22} color={colors.text} /></Pressable>
+      <Pressable accessibilityRole="button" accessibilityLabel="Test beenden" onPress={() => setQuitting(true)} style={styles.quit}><Ionicons name="close" size={22} color={colors.text} /></Pressable>
     </View>
+    {quitting && <View style={ui.card}>
+      <Text style={ui.body}>Quit this test? Your answers so far will not be saved.</Text>
+      <View style={ui.row}><Button secondary title="Quit" onPress={onQuit} style={{ flex: 1 }} /><Button title="Keep going" onPress={() => setQuitting(false)} style={{ flex: 1 }} /></View>
+    </View>}
     {step.kind === "receptive" ? <Receptive key={current.id} task={current as ReceptiveTask} onDone={answers => {
       const task = current as ReceptiveTask;
       const score = scoreReceptive(task, answers);
       reviews.current.push({ task, answers, correct: score.correct, total: score.total });
       setState(value => recordReceptive(value, task.skill, task.id, score.outcome));
-    }} /> : <Writing key={current.id} task={current as WritingTask} onDone={text => setState(value => recordWriting(value, current as WritingTask, text))} />}
+    }} /> : <Writing key={current.id} task={current as WritingTask} onDraft={text => { draft.current = { task: current as WritingTask, text }; }}
+      onDone={text => { draft.current = null; setState(value => recordWriting(value, current as WritingTask, text)); }} />}
   </ScrollView>;
 }
 

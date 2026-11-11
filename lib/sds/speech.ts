@@ -8,13 +8,16 @@ const pitches = [1, 0.8, 1.2, 0.9, 1.1];
 let run = 0;
 let germanVoices: Promise<string[]> | null = null;
 function voices(): Promise<string[]> {
-  germanVoices ??= Speech.getAvailableVoicesAsync()
+  // On the web the list can stay pending forever when the browser has no voices, so do not wait long for it.
+  const listed = Promise.race([Speech.getAvailableVoicesAsync(), new Promise<Speech.Voice[]>(resolve => setTimeout(() => resolve([]), 2000))]);
+  germanVoices ??= listed
     .then(all => {
+      if (!all.length) germanVoices = null;
       const german = all.filter(voice => voice.language?.toLowerCase().startsWith("de"));
       const swiss = german.filter(voice => voice.language.toLowerCase().includes("ch"));
       return [...swiss, ...german.filter(voice => !swiss.includes(voice))].map(voice => voice.identifier);
     })
-    .catch(() => []);
+    .catch(() => { germanVoices = null; return []; });
   return germanVoices;
 }
 
